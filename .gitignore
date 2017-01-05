@@ -40,4 +40,5 @@ config.h
 configure
 Makefile.config
 config.cache
-events-counter
+events_counter
+version.cpp
