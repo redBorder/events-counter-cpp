@@ -6,7 +6,7 @@ BIN=events_counter
 .PHONY=version.cpp
 
 SRCS_SFLOW_$(WITH_SFLOW) += sflow_collect.c
-SRCS= src/main.cpp version.cpp
+SRCS= src/main.cpp src/UUIDCounter/UUIDCounter.cpp src/UUIDConsumer/UUIDConsumerKafka.cpp version.cpp
 OBJS= $(SRCS:.cpp=.o)
 
 all: $(BIN)
