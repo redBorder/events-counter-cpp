@@ -20,6 +20,8 @@ mkl_mkvar_append CPPFLAGS CPPFLAGS "-Wdisabled-optimization -Wshadow"
 mkl_mkvar_append CPPFLAGS CPPFLAGS "-Wcast-qual -Wunused -Wextra"
 mkl_mkvar_append CPPFLAGS CPPFLAGS "-I. -I./src"
 
+mkl_toggle_option "Feature" WITH_COVERAGE "--enable-coverage" "Coverage build" "n"
+
 function checks_libpthread {
     mkl_lib_check pthread HAVE_STDTHREAD fail CXX "-lpthread" \
       "#include <thread>
@@ -39,4 +41,9 @@ function checks {
 
     checks_librdkafka
     checks_libpthread
+
+    if [[ "x$WITH_COVERAGE" != "xn" ]]; then
+      mkl_mkvar_append CPPFLAGS CPPFLAGS "--coverage"
+      mkl_mkvar_append LDFLAGS LDFLAGS "--coverage"
+    fi
 }
