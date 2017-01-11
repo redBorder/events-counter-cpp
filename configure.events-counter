@@ -18,6 +18,7 @@ mkl_mkvar_append CPPFLAGS CPPFLAGS "-Wundef -Wswitch-default"
 mkl_mkvar_append CPPFLAGS CPPFLAGS "-Wmissing-declarations"
 mkl_mkvar_append CPPFLAGS CPPFLAGS "-Wdisabled-optimization -Wshadow"
 mkl_mkvar_append CPPFLAGS CPPFLAGS "-Wcast-qual -Wunused -Wextra"
+mkl_mkvar_append CPPFLAGS CPPFLAGS "-I. -I./src"
 
 function checks_librdkafka {
     # Check that librdkafka is available, and allow to link it statically.
