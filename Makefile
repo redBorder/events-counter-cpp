@@ -2,6 +2,7 @@
 include Makefile.config
 
 BIN=events_counter
+$(BIN): CC=$(CXX)
 
 SRCS_SFLOW_$(WITH_SFLOW) += sflow_collect.c
 SRCS= src/main.cpp version.cpp src/UUIDCountersDB/UUIDCountersDB.cpp \

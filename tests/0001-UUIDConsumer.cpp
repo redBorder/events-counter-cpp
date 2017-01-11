@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include <memory>
 #include <string>
 
 namespace {
@@ -31,7 +32,7 @@ protected:
 		RdKafka::Conf *tconf = RdKafka::Conf::create(
 				RdKafka::Conf::CONF_TOPIC);
 
-		conf->set("metadata.broker.list", "localhost:9092", errstr);
+		conf->set("metadata.broker.list", "kafka:9092", errstr);
 
 		RdKafka::Producer *producer =
 				RdKafka::Producer::create(conf, errstr);
@@ -65,7 +66,7 @@ TEST_F(UUIDConsumerTest, consumer_uuid) {
 		char *group_id = rand_tmpl();
 
 		unique_ptr<UUIDConsumerKafka> consumer(new UUIDConsumerKafka(
-				"localhost:9092", group_id, topic_str));
+				"kafka:9092", group_id, topic_str));
 
 		UUIDProduce("123456", topic_str);
 		while (true) {
