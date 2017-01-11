@@ -36,6 +36,9 @@
 *.log
 *.old
 
+*.test
+*.xml
+
 config.h
 Makefile.config
 config.cache
