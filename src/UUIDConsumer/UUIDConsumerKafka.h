@@ -22,7 +22,6 @@
 #include "UUIDBytes.h"
 
 #include <librdkafka/rdkafkacpp.h>
-#include <rapidjson/document.h>
 
 namespace EventsCounter {
 

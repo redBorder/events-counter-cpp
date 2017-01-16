@@ -20,82 +20,24 @@
 #include <iostream>
 #include <memory>
 
+#include "../Utils/JSON.h"
 #include "UUIDConsumer.h"
 #include "UUIDConsumerKafka.h"
 
-using namespace rapidjson;
 using namespace std;
 using namespace EventsCounter;
-
-/// Wrapper class to give rapidjson zero-copy DOM parsing from a kafka message
-template <typename Encoding = UTF8<>> class SizedBufferStream {
-public:
-	typedef typename Encoding::Ch Ch; //!< Character type of the stream.
-
-	/// Default constructor
-	SizedBufferStream(Ch *t_msg, size_t t_msg_size)
-	    : payload(t_msg), size(t_msg_size), read_pos(0), write_pos(0) {
-	}
-
-	/// Read the current character from stream without moving the read
-	/// cursor.
-	Ch Peek() const {
-		return this->read_pos < this->size
-				       ? this->payload[this->read_pos]
-				       : '\0';
-	}
-
-	/// Read the current character from stream and moving the read cursor to
-	/// next character.
-	Ch Take() {
-		return this->read_pos < this->size
-				       ? this->payload[this->read_pos++]
-				       : '\0';
-	}
-
-	/// Get the current read cursor.
-	/// @return Number of characters read from start.
-
-	size_t Tell() {
-		return this->read_pos;
-	}
-
-	/// Write a character
-	void Put(Ch c) {
-		if (this->write_pos < this->size) {
-			this->payload[this->write_pos++] = c;
-		}
-	}
-
-	/// Begin writing operation at the current read pointer.
-	/// @return The begin writer pointer.
-	Ch *PutBegin() {
-		return &this->payload[this->write_pos = this->read_pos];
-	}
-	/// End the writing operation.
-	/// @param begin The begin write pointer returned by PutBegin().
-	/// @return Number of characters written.
-	size_t PutEnd(Ch *begin) {
-		return write_pos - static_cast<size_t>(begin - this->payload);
-	}
-
-private:
-	Ch *payload;
-	size_t size, read_pos, write_pos;
-};
+using namespace rapidjson;
+using namespace RdKafka;
 
 UUIDBytes UUIDConsumerKafka::consume(uint32_t timeout) const {
-	unique_ptr<RdKafka::Message> message(
-			this->kafka_consumer->consume(timeout));
+	unique_ptr<Message> message(this->kafka_consumer->consume(timeout));
 
 	const int err = message->err();
 	switch (err) {
-	case RdKafka::ERR_NO_ERROR: {
-		SizedBufferStream<> is(static_cast<char *>(const_cast<void *>(
-						       message->payload())),
-				       message->len());
-		Document json;
-		json.ParseStream<kParseDefaultFlags | kParseInsituFlag>(is);
+	case ERR_NO_ERROR: {
+		JSON json(static_cast<char *>(const_cast<void *>(
+					  message->payload())),
+			  message->len());
 
 		if (json.HasParseError()) {
 			cerr << "Couldn't parse message JSON" << endl;
@@ -108,13 +50,13 @@ UUIDBytes UUIDConsumerKafka::consume(uint32_t timeout) const {
 		}
 
 		Value &uuid = json["sensor_uuid"];
-		std::string uuid_str = uuid.GetString();
+		string uuid_str = uuid.GetString();
 
 		return UUIDBytes(uuid_str, message->len());
 	}
 
-	case RdKafka::ERR__TIMED_OUT:
-	case RdKafka::ERR__PARTITION_EOF:
+	case ERR__TIMED_OUT:
+	case ERR__PARTITION_EOF:
 	default:
 		break;
 	}
@@ -123,18 +65,16 @@ UUIDBytes UUIDConsumerKafka::consume(uint32_t timeout) const {
 }
 
 /// Creates a new rkt conf with specified broker + group id
-static unique_ptr<RdKafka::Conf>
-new_rk_conf(const char *brokers, const char *group_id) {
+static unique_ptr<Conf> new_rk_conf(const char *brokers, const char *group_id) {
 	std::string errstr;
-	unique_ptr<RdKafka::Conf> conf(
-			RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
+	unique_ptr<Conf> conf(Conf::create(Conf::CONF_GLOBAL));
 
-	if (conf->set("group.id", group_id, errstr) != RdKafka::Conf::CONF_OK) {
+	if (conf->set("group.id", group_id, errstr) != Conf::CONF_OK) {
 		throw "Error setting group id";
 	}
 
 	if (conf->set("metadata.broker.list", brokers, errstr) !=
-	    RdKafka::Conf::CONF_OK) {
+	    Conf::CONF_OK) {
 		throw "Error setting broker list";
 	}
 
@@ -147,15 +87,14 @@ UUIDConsumerKafka::UUIDConsumerKafka(const char *brokers,
     : UUIDConsumerKafka(topics, new_rk_conf(brokers, group_id).get()) {
 }
 
-UUIDConsumerKafka::UUIDConsumerKafka(const vector<string> &topics,
-				     RdKafka::Conf *conf) {
+UUIDConsumerKafka::UUIDConsumerKafka(const vector<string> &topics, Conf *conf) {
 	std::string errstr;
-	this->kafka_consumer = RdKafka::KafkaConsumer::create(conf, errstr);
+	this->kafka_consumer = KafkaConsumer::create(conf, errstr);
 	if (!this->kafka_consumer) {
 		throw "Failed to create consumer";
 	}
 
-	RdKafka::ErrorCode err = this->kafka_consumer->subscribe(topics);
+	ErrorCode err = this->kafka_consumer->subscribe(topics);
 	if (err) {
 		throw "Failed to subscribe to topic";
 	}
