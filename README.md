@@ -11,7 +11,7 @@ Messages are expected to be on JSON format when counting messages.
 ## Usage
 
 ```bash
-./events-meter <config.json>
+./events-counter <config.yml>
 ```
 
 In the config file you can specify some filters. For example, you can ignore
@@ -19,7 +19,7 @@ messages with a specific field/value on the JSON.
 
 ### License files
 
-It's possible to compile `events-meter` with support for license files i.e.,
+It's possible to compile `events-counter` with support for license files i.e.,
 signed configuration files.
 When the application is compiled with `licensed mode` enabled it will try to
 verify the configuration file and wont start if the verification process fail.
@@ -32,13 +32,13 @@ make
 make install
 ```
 
-This will generate a binary that can be distributed.
+This will generate a ready to use binary.
 
 ## Roadmap
 
-| Version                                                        |       Feature         |
-|:--------------------------------------------------------------:|:---------------------:|
-| [0.2](https://github.com/redBorder/events-counter/milestone/1) | Counter module        |
-| [0.3](https://github.com/redBorder/events-counter/milestone/2) | Config/License module |
-| [0.5](https://github.com/redBorder/events-counter/milestone/4) | Monitor module        |
-| [0.6](https://github.com/redBorder/events-counter/milestone/5) | Alerts module         |
+| Version                                                        |       Feature         | Status             |
+|:--------------------------------------------------------------:|:---------------------:|:------------------:|
+| [0.2](https://github.com/redBorder/events-counter/milestone/1) | Counter module        | :white_check_mark: |
+| [0.3](https://github.com/redBorder/events-counter/milestone/2) | Config/License module | :construction:     |
+| [0.5](https://github.com/redBorder/events-counter/milestone/4) | Monitor module        | :construction:     |
+| [0.6](https://github.com/redBorder/events-counter/milestone/5) | Alerts module         | :construction:     |
