@@ -89,7 +89,8 @@ UUIDConsumerKafka::UUIDConsumerKafka(const char *brokers,
 
 UUIDConsumerKafka::UUIDConsumerKafka(const vector<string> &topics, Conf *conf) {
 	std::string errstr;
-	this->kafka_consumer = KafkaConsumer::create(conf, errstr);
+	this->kafka_consumer = unique_ptr<KafkaConsumer>(
+			KafkaConsumer::create(conf, errstr));
 	if (!this->kafka_consumer) {
 		throw "Failed to create consumer";
 	}
@@ -102,5 +103,4 @@ UUIDConsumerKafka::UUIDConsumerKafka(const vector<string> &topics, Conf *conf) {
 
 UUIDConsumerKafka::~UUIDConsumerKafka() {
 	this->kafka_consumer->close();
-	delete this->kafka_consumer;
 }

@@ -21,13 +21,17 @@
 
 #include "UUIDBytes.h"
 
+#include "UUIDConsumer.h"
+
 #include <librdkafka/rdkafkacpp.h>
+
+#include <memory>
 
 namespace EventsCounter {
 
-class UUIDConsumerKafka {
+class UUIDConsumerKafka : public UUIDConsumer {
 private:
-	RdKafka::KafkaConsumer *kafka_consumer;
+	std::unique_ptr<RdKafka::KafkaConsumer> kafka_consumer;
 
 public:
 	/**
@@ -51,7 +55,9 @@ public:
 	/**
 	 *
 	 */
+	UUIDConsumerKafka(UUIDConsumerKafka &&) = delete;
 	UUIDConsumerKafka &operator=(const UUIDConsumerKafka &) = delete;
+	UUIDConsumerKafka &operator=(const UUIDConsumerKafka &&) = delete;
 
 	/**
 	 * [consume description]
