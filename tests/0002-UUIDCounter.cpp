@@ -19,6 +19,7 @@
 
 #include "TestUtils.h"
 
+#include "Config/Config.h"
 #include "UUIDConsumer/UUIDConsumerKafka.h"
 #include "UUIDCounter/UUIDCounter.h"
 
@@ -35,6 +36,7 @@ namespace {
 using namespace std;
 using namespace EventsCounter;
 using namespace EventsCounter::TestUtils;
+using namespace EventsCounter::Configuration;
 
 class UUIDConsumerTest : public ::testing::Test {
 protected:
@@ -46,31 +48,61 @@ protected:
 		return tmpl;
 	}
 
+	static string test_config(const vector<string> read_topics,
+				  const string read_group_id) {
+		stringstream read_topics_s;
+		for (auto i = read_topics.cbegin(); i != read_topics.cend();
+		     i++) {
+			if (i != read_topics.cbegin()) {
+				read_topics_s << ',';
+			}
+			read_topics_s << "\"" << *i << "\"";
+		}
+
+		stringstream ss;
+		// clang-format off
+		ss << '{' <<
+                    "\"counters_config\":{" <<
+                        "\"read_topics\":[" <<
+                            read_topics_s.rdbuf() <<
+                        "]," <<
+                        "\"rdkafka\": {" <<
+                            "\"read\":{" <<
+                                "\"group.id\":\"" << read_group_id << "\"," <<
+                                "\"metadata.broker.list\":\"kafka:9092\","
+                                "\"topic.auto.offset.reset\":\"smallest\""
+                            "}" <<
+                        "}" <<
+                    "}" <<
+               '}';
+		// clang-format on
+
+		return ss.str();
+	}
+
 public:
 	static void counter_test() {
-		const string read_topic = random_topic();
-
 		static const map<string, uint64_t> zero_uuid_counters{
 				{"123456", 0}};
 		UUIDCountersDB db0(zero_uuid_counters);
 
-		const vector<string> read_topics{read_topic};
-		const string group_id = string("group_") + read_topic;
+		const vector<string> read_topics{random_topic()};
+		const string group_id = string("group_") + read_topics[0];
 
 		unique_ptr<RdKafka::Conf> conf =
 				create_test_kafka_consumer_config("kafka:9092",
 								  group_id);
-		unique_ptr<UUIDConsumer> counter_consumer(
-				new UUIDConsumerKafka(read_topics, conf.get()));
-
-		UUIDCounter counter(counter_consumer.release(), db0);
+		unique_ptr<Config> config(JsonConfig::json_parse(
+				test_config(read_topics, group_id)));
+		unique_ptr<UUIDConsumer> uuid_consumer = config->get_consumer();
+		UUIDCounter counter(uuid_consumer.release(), db0);
 
 		EventsCounter::UUIDCountersDB::counters_t aux_counters =
 				zero_uuid_counters;
-		UUIDProduce("123455", read_topic); // Invalid UUID, should
-						   // ignore
-		UUIDProduce("123456", read_topic);
-		for (int i = 0; i < 10; ++i) { // 10 attempts
+		UUIDProduce("123455", read_topics[0]); // Invalid UUID, should
+						       // ignore
+		UUIDProduce("123456", read_topics[0]);
+		while (true) {
 			counter.swap_counters(aux_counters);
 			if (aux_counters["123456"] != 0) {
 				break;
