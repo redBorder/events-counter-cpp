@@ -11,7 +11,7 @@ public:
 	/**
 	 *
 	 */
-	virtual ~UUIDConsumer() = 0;
+	virtual ~UUIDConsumer(){};
 
 	/**
 	 * [consume description]
