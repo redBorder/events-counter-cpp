@@ -1,28 +1,43 @@
 #include "UUIDCounter.h"
 
+#include <iostream>
 #include <map>
 
 using namespace std;
 using namespace EventsCounter;
 
 void UUIDCounter::run(UUIDCounter *instance, UUIDConsumer *consumer) {
-	unique_ptr<UUIDConsumer> consumer_ptr(consumer);
-
 	while (instance->running.load()) {
-		UUIDBytes data = consumer_ptr->consume(1000);
-		lock_guard<mutex> lock(instance->mtx);
-		instance->uuid_counters_db->uuid_increment(data.get_uuid(), 1);
+		UUIDBytes data = consumer->consume(1000);
+		if (data.empty()) {
+			continue;
+		}
+		UUIDCountersDB::increment_result_t increment_rc;
+		{
+			lock_guard<mutex> lock(instance->mtx);
+			increment_rc = instance->uuid_counters_db.uuid_increment(
+					data.get_uuid(), data.get_bytes());
+		}
+		switch (increment_rc) {
+		case UUIDCountersDB::INCREMENT_NOT_EXISTS:
+			cerr << "UUID " << data.get_uuid()
+			     << " does not exists in db" << endl;
+			break;
+		case UUIDCountersDB::INCREMENT_NOT_EXISTS_IN_LIMITS:
+		case UUIDCountersDB::INCREMENT_LIMIT_REACHED:
+		case UUIDCountersDB::INCREMENT_OK:
+		default:
+			break;
+		}
 	}
 }
 
 UUIDCounter::~UUIDCounter() {
 	this->running.store(false);
+	this->worker.join();
 }
 
-UUIDCountersDB *UUIDCounter::swap_counter(UUIDCountersDB *_uuid_counters_db) {
+void UUIDCounter::swap_counters(UUIDCountersDB::counters_t &_uuid_counters_db) {
 	lock_guard<mutex> lock(this->mtx);
-	UUIDCountersDB *tmp_db = this->uuid_counters_db;
-	this->uuid_counters_db = _uuid_counters_db;
-
-	return tmp_db;
+	this->uuid_counters_db.swap(_uuid_counters_db);
 }

@@ -5,6 +5,7 @@
 #include "../UUIDCountersDB/UUIDCountersDB.h"
 
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <thread>
 
@@ -12,11 +13,11 @@ namespace EventsCounter {
 
 class UUIDCounter {
 private:
-	UUIDConsumer *consumer;
-	UUIDCountersDB *uuid_counters_db;
+	std::unique_ptr<UUIDConsumer> consumer;
+	UUIDCountersDB uuid_counters_db;
 	std::mutex mtx;
 	std::atomic<bool> running{true};
-	std::thread worker{run, this, consumer};
+	std::thread worker{run, this, this->consumer.get()};
 
 	static void run(UUIDCounter *instance, UUIDConsumer *consumer);
 
@@ -24,8 +25,8 @@ public:
 	/**
 	 *
 	 */
-	UUIDCounter(UUIDConsumer *_consumer, UUIDCountersDB *_uuid_counters_db)
-	    : consumer(_consumer), uuid_counters_db(_uuid_counters_db) {
+	UUIDCounter(UUIDConsumer *t_consumer, UUIDCountersDB counters_boostrap)
+	    : consumer(t_consumer), uuid_counters_db(counters_boostrap) {
 	}
 
 	/**
@@ -43,7 +44,7 @@ public:
 	 * @param  counter_db [description]
 	 * @return            [description]
 	 */
-	UUIDCountersDB *swap_counter(UUIDCountersDB *counter_db);
+	void swap_counters(UUIDCountersDB::counters_t &counter_db);
 };
 };
 #endif /* COUNTER_H */

@@ -61,7 +61,7 @@ helchecks: $(TESTS_HELGRIND_XML)
 	@$(call run_tests,-h)
 
 tests/%.test: CPPFLAGS := -I. $(CPPFLAGS)
-tests/%.test: tests/%.o $(filter-out src/main.o, $(OBJS))
+tests/%.test: tests/%.o $(filter-out src/main.o, $(OBJS)) tests/TestUtils.o
 	@echo -e '\033[1;32m[Building]\033[0m\t $@'
 	@$(CXX) $(CPPFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS) -lgtest -lpthread
 
