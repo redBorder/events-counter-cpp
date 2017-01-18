@@ -3,9 +3,9 @@
 
 mkl_require cxx
 mkl_require good_cflags
-mkl_require atomics must pass
 mkl_require gitversion as GITVERSION
 
+mkl_mkvar_append CPPFLAGS CPPFLAGS "-std=gnu++11"
 mkl_mkvar_append CPPFLAGS CPPFLAGS "-DFORTIFY_SOURCE=2 -DNDEBUG"
 #mkl_mkvar_append CPPFLAGS CPPFLAGS "-ftrack-macro-expansion=2 -Wsign-conversion"
 #mkl_mkvar_append CPPFLAGS CPPFLAGS "-Wjump-misses-init" # New in gcc 4.5
@@ -18,17 +18,32 @@ mkl_mkvar_append CPPFLAGS CPPFLAGS "-Wundef -Wswitch-default"
 mkl_mkvar_append CPPFLAGS CPPFLAGS "-Wmissing-declarations"
 mkl_mkvar_append CPPFLAGS CPPFLAGS "-Wdisabled-optimization -Wshadow"
 mkl_mkvar_append CPPFLAGS CPPFLAGS "-Wcast-qual -Wunused -Wextra"
+mkl_mkvar_append CPPFLAGS CPPFLAGS "-I. -I./src"
+
+mkl_toggle_option "Feature" WITH_COVERAGE "--enable-coverage" "Coverage build" "n"
+
+function checks_libpthread {
+    mkl_lib_check pthread HAVE_STDTHREAD fail CXX "-lpthread" \
+      "#include <thread>
+       void f();void f(){std::thread t;}"
+}
 
 function checks_librdkafka {
     # Check that librdkafka is available, and allow to link it statically.
     mkl_meta_set "librdkafka" "desc" "librdkafka is available at http://github.com/edenhill/librdkafka."
     mkl_meta_set "librdkafka" "deb" "librdkafka-dev"
-    mkl_lib_check --static=-lrdkafka "librdkafka" "" fail CC "-lrdkafka++" \
-       "#include <librdkafka/rdkafka.h>"
+    mkl_lib_check --static=-lrdkafkacpp "librdkafka" "" fail CXX "-lrdkafka++" \
+       "#include <librdkafka/rdkafkacpp.h>"
 }
 
 function checks {
     mkl_define_set "OS name" "osName" "`uname`"
 
     checks_librdkafka
+    checks_libpthread
+
+    if [[ "x$WITH_COVERAGE" != "xn" ]]; then
+      mkl_mkvar_append CPPFLAGS CPPFLAGS "--coverage"
+      mkl_mkvar_append LDFLAGS LDFLAGS "--coverage"
+    fi
 }

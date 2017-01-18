@@ -1,7 +1,7 @@
 /*
   Copyright (C) 2017 Eneo Tecnologia S.L.
   Authors: Diego Fernandez <bigomby@gmail.com>
-           Eugenio Perez <eupm90@gmail.com>
+     Eugenio Perez <eupm90@gmail.com>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU Affero General Public License as
@@ -17,6 +17,47 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-int main(int argc, char **argv) {
-	return 0;
-}
+#pragma once
+
+#include "UUIDBytes.h"
+
+#include <librdkafka/rdkafkacpp.h>
+
+namespace EventsCounter {
+
+class UUIDConsumerKafka {
+private:
+	RdKafka::KafkaConsumer *kafka_consumer;
+
+public:
+	/**
+	 *
+	 */
+	UUIDConsumerKafka(const char *brokers,
+			  const char *group_id,
+			  const std::vector<std::string> &topic);
+
+	/**
+	 *
+	 */
+	UUIDConsumerKafka(const std::vector<std::string> &topics,
+			  RdKafka::Conf *t_kafka_consumer_conf);
+
+	/**
+	 *
+	 */
+	~UUIDConsumerKafka();
+
+	/**
+	 *
+	 */
+	UUIDConsumerKafka &operator=(const UUIDConsumerKafka &) = delete;
+
+	/**
+	 * [consume description]
+	 * @param  timeout [description]
+	 * @return         [description]
+	 */
+	UUIDBytes consume(uint32_t timeout) const;
+};
+};
