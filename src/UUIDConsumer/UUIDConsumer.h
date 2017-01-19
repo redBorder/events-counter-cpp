@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Utils/UUIDBytes.h"
+#include "Utils/UUIDBytes.h"
 
 #include <string>
 namespace EventsCounter {
