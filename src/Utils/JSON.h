@@ -17,13 +17,15 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <string>
-
 #include <rapidjson/document.h>
+
+#include <map>
+#include <string>
 
 namespace EventsCounter {
 class JSON : public rapidjson::Document {
 public:
+	/// Zero copy constructor from string buffer
 	JSON(char *buf, size_t len);
 };
 };

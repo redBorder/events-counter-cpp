@@ -25,6 +25,7 @@ using namespace EventsCounter;
 using namespace rapidjson;
 using namespace std;
 
+namespace {
 template <typename Encoding = UTF8<>> class SizedBufferStream {
 public:
 	typedef typename Encoding::Ch Ch;
@@ -67,6 +68,7 @@ private:
 	Ch *payload;
 	size_t size, read_pos, write_pos;
 };
+}; // anonymous namespace
 
 JSON::JSON(char *buf, size_t size) {
 	SizedBufferStream<> is(buf, size);
