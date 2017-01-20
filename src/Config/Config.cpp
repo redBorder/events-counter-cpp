@@ -20,6 +20,7 @@
 #include "Config.h"
 
 #include "UUIDConsumer/UUIDConsumerKafka.h"
+#include "UUIDProducer/UUIDKafkaTopicProducer.h"
 
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
@@ -294,6 +295,24 @@ static void parse_kafka_forwarder_properties(
 	}
 }
 
+class EventCounterCb : public RdKafka::DeliveryReportCb {
+public:
+	virtual void dr_cb(RdKafka::Message &message) {
+		if (message.err() != RdKafka::ERR_NO_ERROR) {
+			cerr << "Couldn't deliver [";
+			cerr.write(static_cast<char *>(message.payload()),
+				   message.len())
+					<< "] to topic ["
+					<< message.topic_name() << ':'
+					<< message.partition()
+					<< "]. Error: " << message.errstr()
+					<< endl;
+		}
+	}
+};
+
+static EventCounterCb events_counter_cb;
+
 } // anonymous namespace
 
 /// @todo manage reload
@@ -368,6 +387,39 @@ JsonConfig *JsonConfig::json_parse(const std::string &text_config) {
 
 		ret->m_counters_offset = chrono::seconds(JSON::get_object_int(
 				timer, "offset", "timer_seconds"));
+	}
+
+	{
+		string errstr;
+		const string counter_write_topic =
+				JSON::get_object_string(counters_config,
+							"write_topic",
+							"counters_config");
+
+		/// Producer config
+		unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(
+				RdKafka::Conf::CONF_GLOBAL)),
+				tconf(RdKafka::Conf::create(
+						RdKafka::Conf::CONF_TOPIC));
+
+		rdkafka_set_conf_vector(counter_producer_rk_conf_v,
+					conf.get(),
+					"kafka");
+		rdkafka_set_conf_vector(counter_producer_rkt_conf_v,
+					tconf.get(),
+					"topic");
+
+		conf->set("dr_cb", &events_counter_cb, errstr);
+
+		std::unique_ptr<RdKafka::Producer> rk(
+				RdKafka::Producer::create(conf.get(), errstr));
+		std::unique_ptr<RdKafka::Topic> rkt(
+				RdKafka::Topic::create(rk.get(),
+						       counter_write_topic,
+						       tconf.get(),
+						       errstr));
+		ret->m_producer = make_shared<UUIDKafkaTopicProducer>(
+				rk.release(), rkt.release());
 	}
 
 	return ret.release();

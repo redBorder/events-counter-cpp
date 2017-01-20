@@ -40,14 +40,6 @@ using namespace EventsCounter::Configuration;
 
 class UUIDConsumerTest : public ::testing::Test {
 protected:
-	static char *rand_tmpl(char *tmpl) {
-		int fd = mkstemp(tmpl);
-		close(fd);
-		remove(tmpl);
-
-		return tmpl;
-	}
-
 	static string vector_to_json(const vector<string> &svector) {
 		stringstream ret;
 		for (auto i = svector.cbegin(); i != svector.cend(); i++) {
@@ -62,6 +54,7 @@ protected:
 
 	static string test_config(const vector<string> &read_topics,
 				  const string &read_group_id,
+				  const string &write_topic,
 				  const string &json_uuid_key,
 				  const vector<string> &uuids) {
 		const string read_topics_s = vector_to_json(read_topics);
@@ -77,6 +70,7 @@ protected:
                         "}," <<
                         "\"json_read_uuid_key\":\"" << json_uuid_key << "\"," <<
                         "\"read_topics\":[" << read_topics_s << "]," <<
+                        "\"write_topic\":\"" << write_topic << "\"," <<
                         "\"rdkafka\": {" <<
                             "\"read\":{" <<
                                 "\"group.id\":\"" << read_group_id << "\"," <<
@@ -106,8 +100,8 @@ public:
 		static const string uuid = "123456";
 		static const string invalid_uuid = uuid + "7";
 		const string read_topic = random_topic();
-
 		const string group_id = string("group_") + read_topic;
+		const string write_topic = random_topic();
 
 		unique_ptr<RdKafka::Conf> conf =
 				create_test_kafka_consumer_config("kafka:9092",
@@ -115,6 +109,7 @@ public:
 		unique_ptr<Config> config(JsonConfig::json_parse(
 				test_config(vector<string>{read_topic},
 					    group_id,
+					    write_topic,
 					    json_uuid_key,
 					    vector<string>{uuid})));
 		unique_ptr<UUIDConsumer> uuid_consumer = config->get_consumer();

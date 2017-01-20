@@ -8,7 +8,8 @@ SRCS_SFLOW_$(WITH_SFLOW) += sflow_collect.c
 SRCS= src/main.cpp version.cpp src/UUIDCountersDB/UUIDCountersDB.cpp \
 	src/UUIDConsumer/UUIDConsumerKafka.cpp src/UUIDCounter/UUIDCounter.cpp \
 	src/UUIDCountersMonitor/LeadershipMonitorKafka.cpp src/Utils/JSON.cpp \
-	src/Config/Config.cpp src/UUIDCountersDB/UUIDCountersDBKafka.cpp
+	src/Config/Config.cpp src/UUIDCountersDB/UUIDCountersDBKafka.cpp \
+	src/UUIDProducer/UUIDKafkaTopicProducer.cpp
 OBJS= $(SRCS:.cpp=.o)
 
 TESTS_C = $(wildcard tests/0*.cpp)
