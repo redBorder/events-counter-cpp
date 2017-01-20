@@ -30,34 +30,10 @@ namespace EventsCounter {
 
 namespace Configuration {
 
-class JSONParserException : public std::exception {
-public:
-	JSONParserException(const char *t_what) : m_what(t_what) {
-	}
-
-	JSONParserException(const std::string &t_what)
-	    : JSONParserException(t_what.c_str()) {
-	}
-
-	virtual const char *what() const noexcept {
-		return m_what;
-	}
-
-private:
-	const char *m_what;
-};
-
 /// TODO this should be splitted in conf and JSON parser that produces a conf
 /// object
 class Config {
 public:
-	class UUIDConsumerFactory {
-	public:
-		virtual UUIDConsumer *create() = 0;
-		virtual ~UUIDConsumerFactory() {
-		}
-	};
-
 	virtual ~Config() {
 	}
 
@@ -70,6 +46,30 @@ protected:
 
 class JsonConfig : public Config {
 public:
+	class JSONParserException : public std::exception {
+	public:
+		JSONParserException(const char *t_what) : m_what(t_what) {
+		}
+
+		JSONParserException(const std::string &t_what)
+		    : JSONParserException(t_what.c_str()) {
+		}
+
+		virtual const char *what() const noexcept {
+			return m_what;
+		}
+
+	private:
+		const char *m_what;
+	};
+
+	class UUIDConsumerFactory {
+	public:
+		virtual UUIDConsumer *create() = 0;
+		virtual ~UUIDConsumerFactory() {
+		}
+	};
+
 	static JsonConfig *json_parse(const std::string &json_text);
 	virtual std::unique_ptr<UUIDConsumer> get_consumer() {
 		return std::unique_ptr<UUIDConsumer>(

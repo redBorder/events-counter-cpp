@@ -58,7 +58,7 @@ rdkafka_set_conf_vector(const vector<pair<string, string>> &conf_parameters,
 	}
 }
 
-class KafkaUUIDConsumerFactory : public Config::UUIDConsumerFactory {
+class KafkaUUIDConsumerFactory : public JsonConfig::UUIDConsumerFactory {
 public:
 	typedef vector<pair<string, string>> kafka_conf_list;
 	KafkaUUIDConsumerFactory(vector<string> t_read_topics,
@@ -121,33 +121,35 @@ static string rapidjson_type_str(const rapidjson::Type type) {
 	};
 }
 
-class JSONUnexpectedTypeException : public JSONParserException {
+class JSONUnexpectedTypeException : public JsonConfig::JSONParserException {
 public:
 	/// Inherit constructor
 	using JSONParserException::JSONParserException;
 };
 
-class JSONChildNotFoundException : public JSONParserException {
+class JSONChildNotFoundException : public JsonConfig::JSONParserException {
 public:
 	/// Inherit constructor
 	using JSONParserException::JSONParserException;
 };
+
+namespace JSON {
 
 /// Get value or throws exception
 /// @TODO convert_cb should be a template parameter, or accept a method of
 /// T_object
-template <typename T, rapidjson::Type expected_json_type, typename T_object>
-static const T get_config(const T_object &object,
-			  const string value,
-			  const std::function<T(const Value &)> convert_cb,
-			  const string *object_name = NULL) {
+template <typename T, rapidjson::Type expected_json_type, typename T_in>
+static const T
+get_object_child(const T_in &object,
+		 const string value,
+		 const std::function<T(const Value &)> convert_cb,
+		 const char *object_name = NULL) {
 	const Value::ConstMemberIterator ret_itr =
 			object.FindMember(value.c_str());
 	if (ret_itr == object.MemberEnd()) {
 		throw JSONChildNotFoundException(
 				string("object") +
-				(object_name ? (string(" ") +
-						object_name->c_str())
+				(object_name ? (string(" ") + object_name)
 					     : "") +
 				" has no property " + value);
 	}
@@ -158,7 +160,7 @@ static const T get_config(const T_object &object,
 		throw JSONUnexpectedTypeException(
 				(object_name ? (string("object"
 						       " ") +
-						object_name->c_str())
+						object_name)
 					     : string("")) +
 				string("child ") + value + " is not " +
 				rapidjson_type_str(expected_json_type) +
@@ -168,8 +170,42 @@ static const T get_config(const T_object &object,
 	return convert_cb(ret);
 }
 
-static vector<string> json_get_string_vector(const string &array_error_name,
-					     const Value::ConstArray &topics) {
+// Need this template for rapidjson::Value and rapidjson::Value::ConstIterator
+template <typename T>
+static Value::ConstObject get_object_object(const T &object,
+					    const string value,
+					    const char *object_name = NULL) {
+	return get_object_child<Value::ConstObject, kObjectType, T>(
+			object,
+			value,
+			[](const Value &v) { return v.GetObject(); },
+			object_name);
+}
+
+template <typename T>
+static Value::ConstArray get_object_array(const T &object,
+					  const string value,
+					  const char *object_name = NULL) {
+	return get_object_child<Value::ConstArray, kArrayType, T>(
+			object,
+			value,
+			[](const Value &v) { return v.GetArray(); },
+			object_name);
+}
+
+template <typename T>
+static std::string get_object_string(const T &object,
+				     const string value,
+				     const char *object_name = NULL) {
+	return get_object_child<const char *, kStringType, T>(
+			object,
+			value,
+			[](const Value &v) { return v.GetString(); },
+			object_name);
+}
+
+static vector<string> get_string_vector(const string &array_error_name,
+					const Value::ConstArray &topics) {
 	vector<string> ret(topics.Size());
 	for (const auto &itr : topics) {
 		if (!itr.IsString()) {
@@ -181,6 +217,8 @@ static vector<string> json_get_string_vector(const string &array_error_name,
 
 	return ret;
 }
+
+}; // JSON namespace
 
 static void
 json_parse_kafka_props(const Value::ConstObject &kafka_props,
@@ -230,14 +268,8 @@ static void parse_kafka_forwarder_properties(
 
 	for (const auto &parse : to_parse) {
 		try {
-			const Value::ConstObject read = get_config<
-					Value::ConstObject,
-					kObjectType>(
-					forwarder_config,
-					parse.key,
-					[](const Value &v) {
-						return v.GetObject();
-					});
+			const Value::ConstObject read = JSON::get_object_object(
+					forwarder_config, parse.key);
 			json_parse_kafka_props(
 					read, parse.rk_conf, parse.rkt_conf);
 		} catch (const JSONChildNotFoundException &e) {
@@ -266,32 +298,17 @@ JsonConfig *JsonConfig::json_parse(const std::string &text_config) {
 		throw JSONUnexpectedTypeException("root is not an object");
 	}
 
-	const Value::ConstObject counters_config =
-			get_config<Value::ConstObject, kObjectType>(
-					d.GetObject(),
-					"counters_config",
-					[](const Value &v) {
-						return v.GetObject();
-					});
+	const Value::ConstObject counters_config = JSON::get_object_object(
+			d.GetObject(), "counters_config");
 
-	const Value::ConstArray json_read_topics =
-			get_config<Value::ConstArray, kArrayType>(
-					counters_config,
-					"read_topics",
-					[](const Value &v) {
-						return v.GetArray();
-					});
+	const Value::ConstArray json_read_topics = JSON::get_object_array(
+			counters_config, "read_topics", "counters_config");
 
-	vector<string> counter_read_topics =
-			json_get_string_vector("read_topics", json_read_topics);
+	vector<string> counter_read_topics = JSON::get_string_vector(
+			"read_topics", json_read_topics);
 
 	const Value::ConstObject &counter_rdkafka_config =
-			get_config<Value::ConstObject, kObjectType>(
-					counters_config,
-					"rdkafka",
-					[](const Value &v) {
-						return v.GetObject();
-					});
+			JSON::get_object_object(counters_config, "rdkafka");
 
 	// TODO if !exist counters_config
 	parse_kafka_forwarder_properties(counter_rdkafka_config,
