@@ -140,6 +140,7 @@ int main(int argc, char **argv) {
 			make_uuid_counters_boostrap_db(
 					config->counters_uuids());
 	UUIDCountersDB boostrap_uuid_db(aux_counters);
+	std::shared_ptr<UUIDProducer> producer = config->get_producer();
 
 	/// @TODO UUID counter should accept consumer in unique_ptr<> reference
 	/// to reference
@@ -160,8 +161,14 @@ int main(int argc, char **argv) {
 			now = chrono::seconds(std::time(NULL));
 		}
 
-		// Tick! produce UUID messages (at this moment, using screen)
-		cout << "TICK" << endl;
+		// Tick! produce UUID messages and clear counter
+		counter.swap_counters(aux_counters);
+		for (auto &t_counter : aux_counters) {
+			producer->produce(UUIDBytes(t_counter.first,
+						    t_counter.second),
+					  next_counters_tick);
+			t_counter.second = 0;
+		}
 	}
 	return 0;
 }

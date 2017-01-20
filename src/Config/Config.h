@@ -21,6 +21,7 @@
 
 #include "UUIDConsumer/UUIDConsumer.h"
 #include "UUIDCountersDB/UUIDCountersDB.h"
+#include "UUIDProducer/UUIDProducer.h"
 
 #include <chrono>
 #include <iostream> // @TODO delete
@@ -39,6 +40,7 @@ public:
 	}
 
 	virtual std::unique_ptr<UUIDConsumer> get_consumer() = 0;
+	virtual std::shared_ptr<UUIDProducer> get_producer() = 0;
 	/// Get counters interval period
 	virtual std::chrono::seconds get_counters_timer_period() = 0;
 	/// Get counters interval offset to launch
@@ -82,6 +84,10 @@ public:
 				m_counters_uuid_consumer_factory->create());
 	}
 
+	virtual std::shared_ptr<UUIDProducer> get_producer() {
+		return m_producer;
+	}
+
 	virtual std::chrono::seconds get_counters_timer_period() {
 		return this->m_counters_period;
 	}
@@ -100,6 +106,7 @@ private:
 
 	/// Counters consumer factory
 	std::unique_ptr<UUIDConsumerFactory> m_counters_uuid_consumer_factory;
+	std::shared_ptr<UUIDProducer> m_producer;
 	std::chrono::seconds m_counters_period, m_counters_offset;
 	std::vector<std::string> m_counters_uuid;
 };

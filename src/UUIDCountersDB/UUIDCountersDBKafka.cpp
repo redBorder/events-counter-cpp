@@ -214,7 +214,7 @@ RedborderCounterToKafkaFormatter::format(const string &uuid,
 
 	CountersJSONWriter<>(uuid, bytes, ret->string_buffer);
 
-	return ret;
+	return std::move(ret);
 }
 
 }; // anonymous namespace

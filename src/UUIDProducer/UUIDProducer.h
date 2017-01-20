@@ -21,22 +21,29 @@
 
 #include "Utils/UUIDBytes.h"
 
+#include <chrono>
+#include <memory>
+#include <thread>
+
 namespace EventsCounter {
 
-class UUIDConsumer {
+class UUIDProducer {
 public:
-	/**
-	 *
-	 */
-	virtual ~UUIDConsumer(){};
+	virtual ~UUIDProducer(){};
 
-	/**
-	 * Consume a message and returns the UUID of the sensor who sents the
-	 * message and the number of bytes of the message.
-	 *
-	 * @param  timeout Max time to wait for a message in milliseconds.
-	 * @return         Pair with UUID and number of bytes of the message.
-	 */
-	virtual UUIDBytes consume(uint32_t timeout) const = 0;
+	typedef enum {
+		NO_ERROR,
+		ERR_QUEUE_FULL,
+		ERR_MSG_TOO_LARGE,
+	} ErrorCode;
+	virtual ErrorCode
+	produce(const UUIDBytes &counter, std::chrono::seconds timestamp) = 0;
+	/// no idle tasks by default
+	virtual void
+	do_idle_tasks(std::chrono::milliseconds timeout =
+				      std::chrono::milliseconds(0)) {
+		std::this_thread::sleep_for(timeout);
+	}
 };
-};
+
+}; // namespace EventsCounter
