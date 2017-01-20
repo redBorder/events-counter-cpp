@@ -32,9 +32,11 @@ public:
 	virtual ~UUIDConsumer(){};
 
 	/**
-	 * [consume description]
-	 * @param  timeout [description]
-	 * @return         [description]
+	 * Consume a message and returns the UUID of the sensor who sents the
+	 * message and the number of bytes of the message.
+	 *
+	 * @param  timeout Max time to wait for a message in milliseconds.
+	 * @return         Pair with UUID and number of bytes of the message.
 	 */
 	virtual UUIDBytes consume(uint32_t timeout) const = 0;
 };

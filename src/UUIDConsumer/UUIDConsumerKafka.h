@@ -30,41 +30,30 @@
 
 namespace EventsCounter {
 
+/**
+ * Class for consume and parse JSON messages from Kafka
+ */
 class UUIDConsumerKafka : public UUIDConsumer {
 private:
 	std::unique_ptr<RdKafka::KafkaConsumer> kafka_consumer;
 
 public:
-	/**
-	 *
-	 */
-	UUIDConsumerKafka(const char *brokers,
-			  const char *group_id,
-			  const std::vector<std::string> &topic);
-
-	/**
-	 *
-	 */
 	UUIDConsumerKafka(const std::vector<std::string> &topics,
 			  RdKafka::Conf *t_kafka_consumer_conf);
 
-	/**
-	 *
-	 */
 	~UUIDConsumerKafka();
 
-	/**
-	 *
-	 */
 	UUIDConsumerKafka(UUIDConsumerKafka &&) = delete;
 	UUIDConsumerKafka &operator=(const UUIDConsumerKafka &) = delete;
 	UUIDConsumerKafka &operator=(const UUIDConsumerKafka &&) = delete;
 
 	/**
-	 * [consume description]
-	 * @param  timeout [description]
-	 * @return         [description]
+	 * Consume a JSON message from Kafka and returns the "sensor_uuid" value
+	 * of the message and the number of bytes.
+	 *
+	 * @param  timeout Max time to wait for a message in milliseconds.
+	 * @return         Pair with UUID and number of bytes of the message.
 	 */
-	UUIDBytes consume(uint32_t timeout) const;
+	UUIDBytes consume(uint32_t timeout_ms) const;
 };
 };

@@ -64,29 +64,6 @@ UUIDBytes UUIDConsumerKafka::consume(uint32_t timeout) const {
 	return UUIDBytes();
 }
 
-/// Creates a new rkt conf with specified broker + group id
-static unique_ptr<Conf> new_rk_conf(const char *brokers, const char *group_id) {
-	std::string errstr;
-	unique_ptr<Conf> conf(Conf::create(Conf::CONF_GLOBAL));
-
-	if (conf->set("group.id", group_id, errstr) != Conf::CONF_OK) {
-		throw "Error setting group id";
-	}
-
-	if (conf->set("metadata.broker.list", brokers, errstr) !=
-	    Conf::CONF_OK) {
-		throw "Error setting broker list";
-	}
-
-	return conf;
-}
-
-UUIDConsumerKafka::UUIDConsumerKafka(const char *brokers,
-				     const char *group_id,
-				     const vector<string> &topics)
-    : UUIDConsumerKafka(topics, new_rk_conf(brokers, group_id).get()) {
-}
-
 UUIDConsumerKafka::UUIDConsumerKafka(const vector<string> &topics, Conf *conf) {
 	std::string errstr;
 	this->kafka_consumer = unique_ptr<KafkaConsumer>(
