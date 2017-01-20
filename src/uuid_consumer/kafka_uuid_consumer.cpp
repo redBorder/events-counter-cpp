@@ -76,12 +76,12 @@ KafkaUUIDConsumer::KafkaUUIDConsumer(const vector<string> &topics,
   this->kafka_consumer =
       unique_ptr<KafkaConsumer>(KafkaConsumer::create(conf, errstr));
   if (!this->kafka_consumer) {
-    throw "Failed to create consumer";
+    throw CreateConsumerException(errstr);
   }
 
   ErrorCode err = this->kafka_consumer->subscribe(topics);
   if (err) {
-    throw "Failed to subscribe to topic";
+    throw SubscribeException(errstr);
   }
 }
 
