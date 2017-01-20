@@ -19,23 +19,26 @@
 
 #pragma once
 
-#include "Utils/UUIDBytes.h"
+#include <chrono>
+#include <iostream>
 
 namespace EventsCounter {
 
-class UUIDConsumer {
-private:
+/**
+ * Interface used to select a leader among other instances.
+ */
+class LeadershipMonitor {
 public:
-	/**
-	 *
-	 */
-	virtual ~UUIDConsumer(){};
+	virtual ~LeadershipMonitor(){};
 
 	/**
-	 * [consume description]
-	 * @param  timeout [description]
-	 * @return         [description]
+	 * Returns if the instance is the leader or not.
+	 *
+	 * @param  timeout_ms Max time to wait for a rebalance.
+	 * @return            True if leadership has been acquired. Flase in
+	 *                    other case
 	 */
-	virtual UUIDBytes consume(uint32_t timeout) const = 0;
+	virtual bool
+	check_leadership(std::chrono::milliseconds timeout_ms) const = 0;
 };
 };

@@ -19,7 +19,8 @@
 
 #pragma once
 
-#include "UUIDBytes.h"
+#include "UUIDConsumer.h"
+#include "Utils/UUIDBytes.h"
 
 #include "UUIDConsumer.h"
 
