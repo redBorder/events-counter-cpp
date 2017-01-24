@@ -217,7 +217,7 @@ static int64_t get_object_int(const T &object,
 
 static vector<string> get_string_vector(const string &array_error_name,
 					const Value::ConstArray &topics) {
-	vector<string> ret(topics.Size());
+	vector<string> ret;
 	for (const auto &itr : topics) {
 		if (!itr.IsString()) {
 			cerr << "One element of " << array_error_name
