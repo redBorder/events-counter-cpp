@@ -62,9 +62,10 @@ class KafkaUUIDConsumerFactory : public JsonConfig::UUIDConsumerFactory {
 public:
 	typedef vector<pair<string, string>> kafka_conf_list;
 	KafkaUUIDConsumerFactory(vector<string> t_read_topics,
+				 string t_json_uuid_key,
 				 kafka_conf_list t_kafka_consumer_conf,
 				 kafka_conf_list t_kafka_consumer_tconf)
-	    : m_read_topics(t_read_topics),
+	    : m_read_topics(t_read_topics), m_json_uuid_key(t_json_uuid_key),
 	      m_kafka_consumer_conf(t_kafka_consumer_conf),
 	      m_kafka_consumer_tconf(t_kafka_consumer_tconf) {
 	}
@@ -92,11 +93,14 @@ public:
 					"kafka");
 		conf->set("default_topic_conf", tconf.get(), errstr);
 
-		return new UUIDConsumerKafka(this->m_read_topics, conf.get());
+		return new UUIDConsumerKafka(this->m_read_topics,
+					     m_json_uuid_key,
+					     conf.get());
 	}
 
 private:
 	vector<string> m_read_topics;
+	string m_json_uuid_key;
 	kafka_conf_list m_kafka_consumer_conf;
 	kafka_conf_list m_kafka_consumer_tconf;
 };
@@ -223,6 +227,7 @@ static vector<string> get_string_vector(const string &array_error_name,
 			cerr << "One element of " << array_error_name
 			     << " is not a string";
 		}
+
 		ret.push_back(itr.GetString());
 	}
 
@@ -289,7 +294,7 @@ static void parse_kafka_forwarder_properties(
 	}
 }
 
-} // unnamed namespace
+} // anonymous namespace
 
 /// @todo manage reload
 JsonConfig *JsonConfig::json_parse(const std::string &text_config) {
@@ -309,6 +314,14 @@ JsonConfig *JsonConfig::json_parse(const std::string &text_config) {
 		throw JSONUnexpectedTypeException("root is not an object");
 	}
 
+	{
+		// Allowed uuids
+		const Value::ConstArray json_uuids =
+				JSON::get_object_array(d, "uuids");
+		ret->m_counters_uuid =
+				JSON::get_string_vector("uuids", json_uuids);
+	}
+
 	const Value::ConstObject counters_config = JSON::get_object_object(
 			d.GetObject(), "counters_config");
 
@@ -326,6 +339,9 @@ JsonConfig *JsonConfig::json_parse(const std::string &text_config) {
 				JSON::get_object_object(counters_config,
 							"rdkafka");
 
+		const string counter_uuid_key = JSON::get_object_string(
+				counters_config, "json_read_uuid_key");
+
 		parse_kafka_forwarder_properties(counter_rdkafka_config,
 						 counter_consumer_rk_conf_v,
 						 counter_consumer_rkt_conf_v,
@@ -336,6 +352,7 @@ JsonConfig *JsonConfig::json_parse(const std::string &text_config) {
 				KafkaUUIDConsumerFactory>(
 				new KafkaUUIDConsumerFactory(
 						counter_read_topics,
+						counter_uuid_key,
 						counter_consumer_rk_conf_v,
 						counter_consumer_rkt_conf_v));
 	}

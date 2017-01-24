@@ -48,16 +48,24 @@ protected:
 		return tmpl;
 	}
 
-	static string test_config(const vector<string> read_topics,
-				  const string read_group_id) {
-		stringstream read_topics_s;
-		for (auto i = read_topics.cbegin(); i != read_topics.cend();
-		     i++) {
-			if (i != read_topics.cbegin()) {
-				read_topics_s << ',';
+	static string vector_to_json(const vector<string> &svector) {
+		stringstream ret;
+		for (auto i = svector.cbegin(); i != svector.cend(); i++) {
+			if (i != svector.cbegin()) {
+				ret << ',';
 			}
-			read_topics_s << "\"" << *i << "\"";
+			ret << "\"" << *i << "\"";
 		}
+
+		return ret.str();
+	}
+
+	static string test_config(const vector<string> &read_topics,
+				  const string &read_group_id,
+				  const string &json_uuid_key,
+				  const vector<string> &uuids) {
+		const string read_topics_s = vector_to_json(read_topics);
+		const string uuids_s = vector_to_json(uuids);
 
 		stringstream ss;
 		// clang-format off
@@ -67,9 +75,8 @@ protected:
                             "\"period\":5," <<
                             "\"offset\":4" <<
                         "}," <<
-                        "\"read_topics\":[" <<
-                            read_topics_s.rdbuf() <<
-                        "]," <<
+                        "\"json_read_uuid_key\":\"" << json_uuid_key << "\"," <<
+                        "\"read_topics\":[" << read_topics_s << "]," <<
                         "\"rdkafka\": {" <<
                             "\"read\":{" <<
                                 "\"group.id\":\"" << read_group_id << "\"," <<
@@ -77,38 +84,52 @@ protected:
                                 "\"topic.auto.offset.reset\":\"smallest\""
                             "}" <<
                         "}" <<
-                    "}" <<
+                    "}, \"uuids\": [" << uuids_s << ']' <<
                '}';
 		// clang-format on
 
 		return ss.str();
 	}
 
+	static map<string, uint64_t>
+	uuid_vector_to_map(const vector<string> uuids) {
+		map<string, uint64_t> ret;
+		for (const auto &uuid : uuids) {
+			ret[uuid] = 0;
+		}
+		return ret;
+	}
+
 public:
 	static void counter_test() {
-		static const map<string, uint64_t> zero_uuid_counters{
-				{"123456", 0}};
-		UUIDCountersDB db0(zero_uuid_counters);
+		static const string json_uuid_key = "sensor_uuid";
+		static const string uuid = "123456";
+		static const string invalid_uuid = uuid + "7";
+		const string read_topic = random_topic();
 
-		const vector<string> read_topics{random_topic()};
-		const string group_id = string("group_") + read_topics[0];
+		const string group_id = string("group_") + read_topic;
 
 		unique_ptr<RdKafka::Conf> conf =
 				create_test_kafka_consumer_config("kafka:9092",
 								  group_id);
 		unique_ptr<Config> config(JsonConfig::json_parse(
-				test_config(read_topics, group_id)));
+				test_config(vector<string>{read_topic},
+					    group_id,
+					    json_uuid_key,
+					    vector<string>{uuid})));
 		unique_ptr<UUIDConsumer> uuid_consumer = config->get_consumer();
-		UUIDCounter counter(uuid_consumer.release(), db0);
-
 		EventsCounter::UUIDCountersDB::counters_t aux_counters =
-				zero_uuid_counters;
-		UUIDProduce("123455", read_topics[0]); // Invalid UUID, should
-						       // ignore
-		UUIDProduce("123456", read_topics[0]);
+				uuid_vector_to_map(config->counters_uuids());
+		UUIDCounter counter(uuid_consumer.release(),
+				    UUIDCountersDB(aux_counters));
+
+		// Invalid UUID, should ignore
+		UUIDProduce(json_uuid_key, invalid_uuid, read_topic);
+		// Valid UUID, should accept
+		UUIDProduce(json_uuid_key, uuid, read_topic);
 		while (true) {
 			counter.swap_counters(aux_counters);
-			if (aux_counters["123456"] != 0) {
+			if (aux_counters[uuid] != 0) {
 				break;
 			}
 
@@ -116,13 +137,13 @@ public:
 		}
 
 		// Check that any map contains invalid uuid
-		ASSERT_EQ(aux_counters.find("123455"), aux_counters.end());
+		ASSERT_EQ(aux_counters.find(invalid_uuid), aux_counters.end());
 		counter.swap_counters(aux_counters);
-		ASSERT_EQ(aux_counters.find("123455"), aux_counters.end());
+		ASSERT_EQ(aux_counters.find(invalid_uuid), aux_counters.end());
 		counter.swap_counters(aux_counters);
 
 		// And bytes have been incremented for valid one
-		ASSERT_NE(aux_counters["123456"], 0);
+		ASSERT_NE(aux_counters[uuid], 0);
 	}
 };
 

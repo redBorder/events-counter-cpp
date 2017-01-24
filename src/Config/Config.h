@@ -43,6 +43,7 @@ public:
 	virtual std::chrono::seconds get_counters_timer_period() = 0;
 	/// Get counters interval offset to launch
 	virtual std::chrono::seconds get_counters_timer_offset() = 0;
+	virtual const std::vector<std::string> &counters_uuids() = 0;
 
 protected:
 	Config() {
@@ -89,6 +90,10 @@ public:
 		return this->m_counters_offset;
 	}
 
+	virtual const std::vector<std::string> &counters_uuids() {
+		return m_counters_uuid;
+	};
+
 private:
 	JsonConfig() {
 	}
@@ -96,6 +101,7 @@ private:
 	/// Counters consumer factory
 	std::unique_ptr<UUIDConsumerFactory> m_counters_uuid_consumer_factory;
 	std::chrono::seconds m_counters_period, m_counters_offset;
+	std::vector<std::string> m_counters_uuid;
 };
 
 }; // namespace Configuration

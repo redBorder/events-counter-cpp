@@ -58,9 +58,11 @@ EventsCounter::TestUtils::create_test_kafka_consumer_config(
 }
 
 /// Produce a single kafka message
-void EventsCounter::TestUtils::UUIDProduce(const std::string &uuid,
+void EventsCounter::TestUtils::UUIDProduce(const std::string &uuid_key,
+					   const std::string &uuid,
 					   const std::string &topic_str) {
-	const string message = string("{\"sensor_uuid\": \"") + uuid + "\"}";
+	const string message =
+			string("{\"") + uuid_key + "\": \"" + uuid + "\"}";
 	string errstr;
 
 	unique_ptr<RdKafka::Conf> conf(

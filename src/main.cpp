@@ -99,10 +99,19 @@ static chrono::seconds next_tick(const chrono::seconds ticks_period,
 	return next_tick;
 }
 
+static UUIDCountersDB::counters_t
+make_uuid_counters_boostrap_db(vector<string> uuid_list) {
+	UUIDCountersDB::counters_t boostrap_db;
+	for (const auto &uuid : uuid_list) {
+		boostrap_db[uuid] = 0;
+	}
+
+	return boostrap_db;
+}
+
 int main(int argc, char **argv) {
 	string config_path;
 	int opt, optidx;
-	UUIDCountersDB boostrap_uuid_db(map<string, uint64_t>{{"abc", 0}});
 
 	while ((opt = getopt_long(argc, argv, "hc:", long_options, &optidx)) !=
 	       EOF) {
@@ -127,7 +136,13 @@ int main(int argc, char **argv) {
 	}
 
 	unique_ptr<Config> config = parse_json_config_file(config_path);
-	/// @TODO UUID counter should accept unique_ptr<> reference to reference
+	UUIDCountersDB::counters_t aux_counters =
+			make_uuid_counters_boostrap_db(
+					config->counters_uuids());
+	UUIDCountersDB boostrap_uuid_db(aux_counters);
+
+	/// @TODO UUID counter should accept consumer in unique_ptr<> reference
+	/// to reference
 	UUIDCounter counter(config->get_consumer().release(), boostrap_uuid_db);
 	for (;;) {
 		const chrono::seconds ticks_period =
