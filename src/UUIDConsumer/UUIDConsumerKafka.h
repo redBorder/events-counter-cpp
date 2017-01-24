@@ -36,9 +36,12 @@ namespace EventsCounter {
 class UUIDConsumerKafka : public UUIDConsumer {
 private:
 	std::unique_ptr<RdKafka::KafkaConsumer> kafka_consumer;
+	/// UUID field in kafka JSON message
+	std::string json_uuid_key;
 
 public:
 	UUIDConsumerKafka(const std::vector<std::string> &topics,
+			  const std::string json_uuid_key,
 			  RdKafka::Conf *t_kafka_consumer_conf);
 
 	~UUIDConsumerKafka();

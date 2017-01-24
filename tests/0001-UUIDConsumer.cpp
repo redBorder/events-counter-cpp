@@ -38,6 +38,7 @@ class UUIDConsumerTest : public ::testing::Test {};
 
 TEST_F(UUIDConsumerTest, consumer_uuid) {
 	EXPECT_NO_THROW({
+		static const string json_uuid_key = "sensor_uuid";
 		const string topic_str = random_topic();
 		const string group_id = string("group_") + topic_str;
 
@@ -45,9 +46,10 @@ TEST_F(UUIDConsumerTest, consumer_uuid) {
 				create_test_kafka_consumer_config("kafka:9092",
 								  group_id);
 		UUIDConsumerKafka consumer(vector<string>{topic_str},
+					   json_uuid_key,
 					   kafka_conf.get());
 
-		UUIDProduce("123456", topic_str);
+		UUIDProduce(json_uuid_key, "123456", topic_str);
 		while (true) {
 			const UUIDBytes data = consumer.consume(100);
 			if (data.empty()) {

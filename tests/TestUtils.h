@@ -55,7 +55,9 @@ static std::string random_topic() {
 }
 
 /// Produce a single kafka message
-void UUIDProduce(const std::string &uuid, const std::string &topic_str);
+void UUIDProduce(const std::string &uuid_key,
+		 const std::string &uuid,
+		 const std::string &topic_str);
 
 /// Wait some time to kafka destruction
 static void wait_kafka_destroyed(void) __attribute__((unused));

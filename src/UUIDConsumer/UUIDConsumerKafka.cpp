@@ -44,12 +44,13 @@ UUIDBytes UUIDConsumerKafka::consume(uint32_t timeout) const {
 			break;
 		}
 
-		if (!json.IsObject() || !json.HasMember("sensor_uuid") ||
-		    !json["sensor_uuid"].IsString()) {
+		if (!json.IsObject() ||
+		    !json.HasMember(this->json_uuid_key.c_str()) ||
+		    !json[this->json_uuid_key.c_str()].IsString()) {
 			break;
 		}
 
-		Value &uuid = json["sensor_uuid"];
+		Value &uuid = json[this->json_uuid_key.c_str()];
 		string uuid_str = uuid.GetString();
 
 		return UUIDBytes(uuid_str, message->len());
@@ -64,7 +65,10 @@ UUIDBytes UUIDConsumerKafka::consume(uint32_t timeout) const {
 	return UUIDBytes();
 }
 
-UUIDConsumerKafka::UUIDConsumerKafka(const vector<string> &topics, Conf *conf) {
+UUIDConsumerKafka::UUIDConsumerKafka(const vector<string> &topics,
+				     const string t_json_uuid_key,
+				     RdKafka::Conf *conf)
+    : json_uuid_key(t_json_uuid_key) {
 	std::string errstr;
 	this->kafka_consumer = unique_ptr<KafkaConsumer>(
 			KafkaConsumer::create(conf, errstr));

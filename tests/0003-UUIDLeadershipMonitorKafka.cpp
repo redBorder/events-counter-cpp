@@ -57,7 +57,7 @@ TEST_F(LeadershipMonitorTest, leadership) {
 	string group("group_" + rand_str);
 
 	// Produce a dummy message to force Kafka to create a partition
-	UUIDProduce("dummy", topic);
+	UUIDProduce("uuid", "dummy", topic);
 
 	vector<unique_ptr<LeadershipMonitorKafka>> instances;
 	for (uint32_t i = 0; i < 5; i++) {
