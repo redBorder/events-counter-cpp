@@ -63,6 +63,10 @@ protected:
 		// clang-format off
 		ss << '{' <<
                     "\"counters_config\":{" <<
+                        "\"timer_seconds\": {" <<
+                            "\"period\":5," <<
+                            "\"offset\":4" <<
+                        "}," <<
                         "\"read_topics\":[" <<
                             read_topics_s.rdbuf() <<
                         "]," <<
