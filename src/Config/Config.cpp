@@ -204,6 +204,17 @@ static std::string get_object_string(const T &object,
 			object_name);
 }
 
+template <typename T>
+static int64_t get_object_int(const T &object,
+			      const string value,
+			      const char *object_name = NULL) {
+	return get_object_child<int64_t, kNumberType, T>(
+			object,
+			value,
+			[](const Value &v) { return v.GetInt64(); },
+			object_name);
+}
+
 static vector<string> get_string_vector(const string &array_error_name,
 					const Value::ConstArray &topics) {
 	vector<string> ret(topics.Size());
@@ -301,27 +312,46 @@ JsonConfig *JsonConfig::json_parse(const std::string &text_config) {
 	const Value::ConstObject counters_config = JSON::get_object_object(
 			d.GetObject(), "counters_config");
 
-	const Value::ConstArray json_read_topics = JSON::get_object_array(
-			counters_config, "read_topics", "counters_config");
+	{
+		// Consumer
+		const Value::ConstArray json_read_topics =
+				JSON::get_object_array(counters_config,
+						       "read_topics",
+						       "counters_config");
 
-	vector<string> counter_read_topics = JSON::get_string_vector(
-			"read_topics", json_read_topics);
+		vector<string> counter_read_topics = JSON::get_string_vector(
+				"read_topics", json_read_topics);
 
-	const Value::ConstObject &counter_rdkafka_config =
-			JSON::get_object_object(counters_config, "rdkafka");
+		const Value::ConstObject &counter_rdkafka_config =
+				JSON::get_object_object(counters_config,
+							"rdkafka");
 
-	// TODO if !exist counters_config
-	parse_kafka_forwarder_properties(counter_rdkafka_config,
-					 counter_consumer_rk_conf_v,
-					 counter_consumer_rkt_conf_v,
-					 counter_producer_rk_conf_v,
-					 counter_producer_rkt_conf_v);
+		parse_kafka_forwarder_properties(counter_rdkafka_config,
+						 counter_consumer_rk_conf_v,
+						 counter_consumer_rkt_conf_v,
+						 counter_producer_rk_conf_v,
+						 counter_producer_rkt_conf_v);
 
-	ret->m_counters_uuid_consumer_factory = unique_ptr<
-			KafkaUUIDConsumerFactory>(new KafkaUUIDConsumerFactory(
-			counter_read_topics,
-			counter_consumer_rk_conf_v,
-			counter_consumer_rkt_conf_v));
+		ret->m_counters_uuid_consumer_factory = unique_ptr<
+				KafkaUUIDConsumerFactory>(
+				new KafkaUUIDConsumerFactory(
+						counter_read_topics,
+						counter_consumer_rk_conf_v,
+						counter_consumer_rkt_conf_v));
+	}
+
+	{
+		// Timer for produce messages
+		const Value::ConstObject timer =
+				JSON::get_object_object(counters_config,
+							"timer_seconds",
+							"counters_config");
+		ret->m_counters_period = chrono::seconds(JSON::get_object_int(
+				timer, "period", "timer_seconds"));
+
+		ret->m_counters_offset = chrono::seconds(JSON::get_object_int(
+				timer, "offset", "timer_seconds"));
+	}
 
 	return ret.release();
 }

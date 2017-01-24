@@ -22,6 +22,7 @@
 #include "UUIDConsumer/UUIDConsumer.h"
 #include "UUIDCountersDB/UUIDCountersDB.h"
 
+#include <chrono>
 #include <iostream> // @TODO delete
 #include <memory>
 #include <vector>
@@ -38,6 +39,10 @@ public:
 	}
 
 	virtual std::unique_ptr<UUIDConsumer> get_consumer() = 0;
+	/// Get counters interval period
+	virtual std::chrono::seconds get_counters_timer_period() = 0;
+	/// Get counters interval offset to launch
+	virtual std::chrono::seconds get_counters_timer_offset() = 0;
 
 protected:
 	Config() {
@@ -76,11 +81,21 @@ public:
 				m_counters_uuid_consumer_factory->create());
 	}
 
+	virtual std::chrono::seconds get_counters_timer_period() {
+		return this->m_counters_period;
+	}
+	/// Get counters interval offset to launch
+	virtual std::chrono::seconds get_counters_timer_offset() {
+		return this->m_counters_offset;
+	}
+
 private:
 	JsonConfig() {
 	}
+
 	/// Counters consumer factory
 	std::unique_ptr<UUIDConsumerFactory> m_counters_uuid_consumer_factory;
+	std::chrono::seconds m_counters_period, m_counters_offset;
 };
 
 }; // namespace Configuration

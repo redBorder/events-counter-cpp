@@ -1,7 +1,7 @@
 /*
   Copyright (C) 2017 Eneo Tecnologia S.L.
   Authors: Diego Fernandez <bigomby@gmail.com>
-           Eugenio Perez <eupm90@gmail.com>
+	   Eugenio Perez <eupm90@gmail.com>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU Affero General Public License as
@@ -17,6 +17,136 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Config/Config.h"
+#include "UUIDCounter/UUIDCounter.h"
+
+#include <chrono>
+#include <fstream>
+#include <getopt.h>
+#include <iostream>
+#include <string>
+
+using namespace std;
+using namespace EventsCounter;
+using namespace EventsCounter::Configuration;
+
+static const struct option long_options[] = {
+		{"help", no_argument, nullptr, 'h'},
+		{"help", no_argument, nullptr, '?'},
+		{"config", required_argument, nullptr, 'c'},
+		{0, 0, 0, 0}};
+
+/// @TODO
+static void usage() {
+}
+
+/// Return input file stream size
+static ssize_t ifstream_binary_size(std::ifstream &is) {
+	const int original_pos = is.tellg();
+
+	is.seekg(0, is.beg);
+	const int first_pos = is.tellg();
+
+	is.seekg(0, is.end);
+	const int last_pos = is.tellg();
+
+	is.seekg(original_pos);
+
+	return last_pos - first_pos;
+}
+
+static unique_ptr<Config> parse_json_config_file(const string &path) {
+	std::ifstream file{};
+	file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+	try {
+		file.open(path, std::ifstream::binary);
+		const ssize_t file_size = ifstream_binary_size(file);
+		if (file_size <= 0) {
+			cerr << "Invalid length " << file_size
+			     << "of config file " << path << '.' << endl;
+			return nullptr;
+		}
+		char config_text[file_size + 1];
+		file.read(config_text, file_size);
+		config_text[file_size] = '\0';
+		return unique_ptr<Config>(JsonConfig::json_parse(config_text));
+	} catch (const JsonConfig::JSONParserException &e) {
+		cerr << "Couldn't parse JSON config in " << path << ": "
+		     << e.what() << endl;
+	} catch (const ifstream::failure &e) {
+		cerr << "Couldn't open file " << path << ": " << e.what()
+		     << endl;
+	}
+
+	return nullptr;
+}
+
+// Using all duration, not time point. Make the code simpler.
+static chrono::seconds next_tick(const chrono::seconds ticks_period,
+				 const chrono::seconds ticks_offset,
+				 const chrono::seconds now) {
+	// Number of ticks since epoch
+	const uint64_t n_ticks = now / ticks_period;
+
+	// Next tick
+	auto next_tick = ticks_period * n_ticks + ticks_offset;
+	if (next_tick <= now) {
+		// we are in duration interval, but tick is in the past
+		next_tick += ticks_period;
+	}
+
+	return next_tick;
+}
+
 int main(int argc, char **argv) {
+	string config_path;
+	int opt, optidx;
+	UUIDCountersDB boostrap_uuid_db(map<string, uint64_t>{{"abc", 0}});
+
+	while ((opt = getopt_long(argc, argv, "hc:", long_options, &optidx)) !=
+	       EOF) {
+		switch (opt) {
+		case 'h':
+		case '?':
+
+			return 0;
+		case 'c':
+			config_path = optarg;
+			break;
+		default:
+			// getopt should emit an error.
+			break;
+		};
+	}
+
+	if (config_path.empty()) {
+		cerr << "You didn't specified a config file." << endl;
+		usage();
+		return 1;
+	}
+
+	unique_ptr<Config> config = parse_json_config_file(config_path);
+	/// @TODO UUID counter should accept unique_ptr<> reference to reference
+	UUIDCounter counter(config->get_consumer().release(), boostrap_uuid_db);
+	for (;;) {
+		const chrono::seconds ticks_period =
+				config->get_counters_timer_period();
+		const chrono::seconds ticks_offset =
+				config->get_counters_timer_offset();
+
+		chrono::seconds now = chrono::seconds(std::time(NULL));
+		const chrono::seconds next_counters_tick =
+				next_tick(ticks_period, ticks_offset, now);
+
+		// Do idle tasks until I need something
+		while (now < next_counters_tick) {
+			this_thread::sleep_for(next_counters_tick - now);
+			now = chrono::seconds(std::time(NULL));
+		}
+
+		// Tick! produce UUID messages (at this moment, using screen)
+		cout << "TICK" << endl;
+	}
 	return 0;
 }
