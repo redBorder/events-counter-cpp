@@ -33,8 +33,7 @@ using namespace RdKafka;
 UUIDBytes CounterUUIDJSONKafkaConsumer::get_message_uuid_bytes(
 		const std::string &t_json_uuid_key,
 		const RdKafka::Message *message) const {
-	JSON json(static_cast<char *>(const_cast<void *>(message->payload())),
-		  message->len());
+	JSON json(static_cast<char *>(message->payload()), message->len());
 
 	if (json.HasParseError()) {
 		cerr << "Couldn't parse message JSON" << endl;
