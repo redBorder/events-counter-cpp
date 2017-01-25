@@ -94,9 +94,9 @@ public:
 					"kafka");
 		conf->set("default_topic_conf", tconf.get(), errstr);
 
-		return new UUIDConsumerKafka(this->m_read_topics,
-					     m_json_uuid_key,
-					     conf.get());
+		return new CounterUUIDJSONKafkaConsumer(this->m_read_topics,
+							m_json_uuid_key,
+							conf.get());
 	}
 
 private:
