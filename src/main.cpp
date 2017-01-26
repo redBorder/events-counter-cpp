@@ -140,11 +140,13 @@ int main(int argc, char **argv) {
 			make_uuid_counters_boostrap_db(
 					config->counters_uuids());
 	UUIDCountersDB boostrap_uuid_db(aux_counters);
-	std::shared_ptr<UUIDProducer> producer = config->get_producer();
+	std::shared_ptr<UUIDProducer> producer =
+			config->get_counters_producer();
 
 	/// @TODO UUID counter should accept consumer in unique_ptr<> reference
 	/// to reference
-	UUIDCounter counter(config->get_consumer().release(), boostrap_uuid_db);
+	UUIDCounter counter(config->get_counters_consumer().release(),
+			    boostrap_uuid_db);
 	for (;;) {
 		const chrono::seconds ticks_period =
 				config->get_counters_timer_period();
