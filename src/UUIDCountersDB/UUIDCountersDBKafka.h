@@ -19,24 +19,22 @@
 
 #pragma once
 
-#include "Utils/UUIDBytes.h"
+#include "UUIDCountersDB.h"
+
+#include <librdkafka/rdkafkacpp.h>
+
+#include <memory>
+#include <vector>
 
 namespace EventsCounter {
 
-class UUIDConsumer {
+class CounterToKafkaFormatter {
 public:
-	/**
-	 *
-	 */
-	virtual ~UUIDConsumer(){};
+	virtual ~CounterToKafkaFormatter() = default;
+	virtual std::unique_ptr<RdKafka::Message>
+	format(const std::string &uuid, const uint64_t bytes) = 0;
 
-	/**
-	 * Consume a message and returns the UUID of the sensor who sents the
-	 * message and the number of bytes of the message.
-	 *
-	 * @param  timeout Max time to wait for a message in milliseconds.
-	 * @return         Pair with UUID and number of bytes of the message.
-	 */
-	virtual UUIDBytes consume(uint32_t timeout) const = 0;
+	static std::unique_ptr<CounterToKafkaFormatter> create();
 };
-};
+
+}; // namespace EventsCounter
