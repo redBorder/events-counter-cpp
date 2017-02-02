@@ -32,6 +32,7 @@ namespace {
 
 using namespace std;
 using namespace EventsCounter;
+using namespace EventsCounter::Utils;
 using namespace EventsCounter::TestUtils;
 
 class UUIDConsumerTest : public ::testing::Test {};

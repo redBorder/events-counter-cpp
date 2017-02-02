@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "Utils/UUIDBytes.h"
+#include "../utils/uuid_bytes.hpp"
 
 #include <chrono>
 #include <memory>
@@ -36,8 +36,8 @@ public:
 		ERR_QUEUE_FULL,
 		ERR_MSG_TOO_LARGE,
 	} ErrorCode;
-	virtual ErrorCode
-	produce(const UUIDBytes &counter, std::chrono::seconds timestamp) = 0;
+	virtual ErrorCode produce(const Utils::UUIDBytes &counter,
+				  std::chrono::seconds timestamp) = 0;
 	/// no idle tasks by default
 	virtual void
 	do_idle_tasks(std::chrono::milliseconds timeout =

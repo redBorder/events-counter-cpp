@@ -27,7 +27,7 @@ using namespace std;
 using namespace std::chrono;
 
 UUIDProducer::ErrorCode
-UUIDKafkaTopicProducer::produce(const UUIDBytes &counter,
+UUIDKafkaTopicProducer::produce(const Utils::UUIDBytes &counter,
 				chrono::seconds timestamp) {
 	/// @TODO extract JSON formatting
 	const string s = string("{\"monitor\":\"sensor_received_bytes\"") +

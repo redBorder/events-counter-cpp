@@ -19,8 +19,8 @@
 
 #pragma once
 
+#include "../utils/uuid_bytes.hpp"
 #include "UUIDConsumer.h"
-#include "Utils/UUIDBytes.h"
 
 #include "UUIDConsumer.h"
 
@@ -40,7 +40,7 @@ private:
 	std::string json_uuid_key;
 
 protected:
-	virtual UUIDBytes
+	virtual Utils::UUIDBytes
 	get_message_uuid_bytes(const std::string &json_uuid_key,
 			       const RdKafka::Message *message) const = 0;
 
@@ -62,7 +62,7 @@ public:
 	 * @param  timeout Max time to wait for a message in milliseconds.
 	 * @return         Pair with UUID and number of bytes of the message.
 	 */
-	UUIDBytes consume(uint32_t timeout_ms) const;
+	Utils::UUIDBytes consume(uint32_t timeout_ms) const;
 };
 
 /// Transforms counter kafka input message in UUIDBytes format
@@ -71,7 +71,7 @@ public:
 	using UUIDConsumerKafka::UUIDConsumerKafka;
 
 private:
-	virtual UUIDBytes
+	virtual Utils::UUIDBytes
 	get_message_uuid_bytes(const std::string &json_uuid_key,
 			       const RdKafka::Message *message) const;
 };

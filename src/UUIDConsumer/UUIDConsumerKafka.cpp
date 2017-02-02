@@ -20,7 +20,7 @@
 #include <iostream>
 #include <memory>
 
-#include "../Utils/JSON.h"
+#include "../utils/json_zerocopy.hpp"
 #include "UUIDConsumer.h"
 #include "UUIDConsumerKafka.h"
 
@@ -30,28 +30,29 @@ using namespace rapidjson;
 using namespace RdKafka;
 
 /// @TODO improve error messages
-UUIDBytes CounterUUIDJSONKafkaConsumer::get_message_uuid_bytes(
+Utils::UUIDBytes CounterUUIDJSONKafkaConsumer::get_message_uuid_bytes(
 		const std::string &t_json_uuid_key,
 		const RdKafka::Message *message) const {
-	JSON json(static_cast<char *>(message->payload()), message->len());
+	Utils::JSON json(static_cast<char *>(message->payload()),
+			 message->len());
 
 	if (json.HasParseError()) {
 		cerr << "Couldn't parse message JSON" << endl;
-		return UUIDBytes();
+		return Utils::UUIDBytes();
 	}
 
 	if (!json.IsObject() || !json.HasMember(t_json_uuid_key.c_str()) ||
 	    !json[t_json_uuid_key.c_str()].IsString()) {
-		return UUIDBytes();
+		return Utils::UUIDBytes();
 	}
 
 	Value &uuid = json[t_json_uuid_key.c_str()];
 	string uuid_str = uuid.GetString();
 
-	return UUIDBytes(uuid_str, message->len());
+	return Utils::UUIDBytes(uuid_str, message->len());
 }
 
-UUIDBytes UUIDConsumerKafka::consume(uint32_t timeout) const {
+Utils::UUIDBytes UUIDConsumerKafka::consume(uint32_t timeout) const {
 	unique_ptr<Message> message(this->kafka_consumer->consume(timeout));
 
 	const int err = message->err();
@@ -66,7 +67,7 @@ UUIDBytes UUIDConsumerKafka::consume(uint32_t timeout) const {
 		break;
 	}
 
-	return UUIDBytes();
+	return Utils::UUIDBytes();
 }
 
 UUIDConsumerKafka::UUIDConsumerKafka(const vector<string> &topics,

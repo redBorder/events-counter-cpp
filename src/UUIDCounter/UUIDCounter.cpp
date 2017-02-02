@@ -8,7 +8,7 @@ using namespace EventsCounter;
 
 void UUIDCounter::run(UUIDCounter *instance, UUIDConsumer *consumer) {
 	while (instance->running.load()) {
-		UUIDBytes data = consumer->consume(1000);
+		Utils::UUIDBytes data = consumer->consume(1000);
 		if (data.empty()) {
 			continue;
 		}

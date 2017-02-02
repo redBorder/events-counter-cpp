@@ -40,8 +40,8 @@ public:
 		}
 	}
 
-	UUIDProducer::ErrorCode
-	produce(const UUIDBytes &counter, const std::chrono::seconds duration);
+	UUIDProducer::ErrorCode produce(const Utils::UUIDBytes &counter,
+					const std::chrono::seconds duration);
 
 	UUIDKafkaTopicProducer(UUIDKafkaTopicProducer &) = delete;
 	UUIDKafkaTopicProducer(UUIDKafkaTopicProducer &&) = delete;

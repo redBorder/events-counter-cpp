@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "Utils/UUIDBytes.h"
+#include "../utils/uuid_bytes.hpp"
 
 namespace EventsCounter {
 
@@ -37,6 +37,6 @@ public:
 	 * @param  timeout Max time to wait for a message in milliseconds.
 	 * @return         Pair with UUID and number of bytes of the message.
 	 */
-	virtual UUIDBytes consume(uint32_t timeout) const = 0;
+	virtual Utils::UUIDBytes consume(uint32_t timeout) const = 0;
 };
 };
