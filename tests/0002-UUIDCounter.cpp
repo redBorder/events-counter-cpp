@@ -19,9 +19,9 @@
 
 #include "TestUtils.h"
 
-#include "Config/Config.h"
 #include "UUIDConsumer/UUIDConsumerKafka.h"
 #include "UUIDCounter/UUIDCounter.h"
+#include "config/config.hpp"
 
 #include <gtest/gtest.h>
 #include <librdkafka/rdkafkacpp.h>
