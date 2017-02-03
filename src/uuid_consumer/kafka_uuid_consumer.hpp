@@ -31,6 +31,31 @@
 namespace EventsCounter {
 namespace UUIDConsumer {
 
+class UUIDConsumerKafkaException : public std::exception {
+private:
+  const std::string errstr;
+
+protected:
+  UUIDConsumerKafkaException(std::string t_errstr) : errstr(t_errstr) {}
+
+public:
+  virtual const char *what() const throw() {
+    return ("LeadershipMonitorKafkaException: " + errstr).c_str();
+  }
+};
+
+class CreateConsumerException : public UUIDConsumerKafkaException {
+public:
+  CreateConsumerException(std::string t_errstr)
+      : UUIDConsumerKafkaException(t_errstr) {}
+};
+
+class SubscribeException : public UUIDConsumerKafkaException {
+public:
+  SubscribeException(std::string t_errstr)
+      : UUIDConsumerKafkaException(t_errstr) {}
+};
+
 /**
  * Class for consume and parse JSON messages from Kafka
  */
