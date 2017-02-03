@@ -19,8 +19,8 @@
 
 #include "TestUtils.h"
 
-#include "../src/UUIDCountersDB/UUIDCountersDB.h"
 #include "../src/uuid_consumer/kafka_uuid_consumer.hpp"
+#include "../src/uuid_counters_db/uuid_counters_db.hpp"
 
 #include <gtest/gtest.h>
 
@@ -39,45 +39,43 @@ using namespace EventsCounter::TestUtils;
 class UUIDConsumerTest : public ::testing::Test {};
 
 TEST_F(UUIDConsumerTest, consumer_uuid) {
-	EXPECT_NO_THROW({
-		static const string json_uuid_key = "sensor_uuid";
-		const string topic_str = random_topic();
-		const string group_id = string("group_") + topic_str;
+  EXPECT_NO_THROW({
+    static const string json_uuid_key = "sensor_uuid";
+    const string topic_str = random_topic();
+    const string group_id = string("group_") + topic_str;
 
-		unique_ptr<RdKafka::Conf> kafka_conf =
-				create_test_kafka_consumer_config("kafka:9092",
-								  group_id);
-		CounterUUIDJSONKafkaConsumer consumer(vector<string>{topic_str},
-						      json_uuid_key,
-						      kafka_conf.get());
+    unique_ptr<RdKafka::Conf> kafka_conf =
+        create_test_kafka_consumer_config("kafka:9092", group_id);
+    CounterUUIDJSONKafkaConsumer consumer(vector<string>{topic_str},
+                                          json_uuid_key, kafka_conf.get());
 
-		UUIDProduce(json_uuid_key, "123456", topic_str);
-		while (true) {
-			const UUIDBytes data = consumer.consume(100);
-			if (data.empty()) {
-				continue;
-			}
+    UUIDProduce(json_uuid_key, "123456", topic_str);
+    while (true) {
+      const UUIDBytes data = consumer.consume(100);
+      if (data.empty()) {
+        continue;
+      }
 
-			EXPECT_EQ("123456", data.get_uuid());
-			EXPECT_EQ(25, data.get_bytes());
-			break;
-		}
+      EXPECT_EQ("123456", data.get_uuid());
+      EXPECT_EQ(25, data.get_bytes());
+      break;
+    }
 
-	});
+  });
 }
 }
 
 int main(int argc, char **argv) {
-	::testing::InitGoogleTest(&argc, argv);
+  ::testing::InitGoogleTest(&argc, argv);
 
-	const int rc = RUN_ALL_TESTS();
-	for (int i = 0; i < 10; ++i) {
-		static const int timeout_ms = 100;
-		const int destroy_rc = RdKafka::wait_destroyed(timeout_ms);
-		if (0 == destroy_rc) {
-			break;
-		}
-	}
+  const int rc = RUN_ALL_TESTS();
+  for (int i = 0; i < 10; ++i) {
+    static const int timeout_ms = 100;
+    const int destroy_rc = RdKafka::wait_destroyed(timeout_ms);
+    if (0 == destroy_rc) {
+      break;
+    }
+  }
 
-	return rc;
+  return rc;
 }

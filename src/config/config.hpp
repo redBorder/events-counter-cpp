@@ -19,9 +19,9 @@
 
 #pragma once
 
-#include "../UUIDCountersDB/UUIDCountersDB.h"
 #include "../UUIDProducer/UUIDProducer.h"
 #include "../uuid_consumer/uuid_consumer.hpp"
+#include "../uuid_counters_db/uuid_counters_db.hpp"
 
 #include <rapidjson/document.h>
 
@@ -34,8 +34,8 @@ namespace EventsCounter {
 
 namespace Configuration {
 
-/// TODO this should be splitted in conf and JSON parser that produces a conf
-/// object
+// TODO this should be splitted in conf and JSON parser that produces a conf
+// object
 class Config {
 public:
   virtual ~Config() {}
@@ -43,8 +43,10 @@ public:
   virtual std::unique_ptr<UUIDConsumer::UUIDConsumer>
   get_counters_consumer() = 0;
   virtual std::shared_ptr<UUIDProducer> get_counters_producer() = 0;
+
   /// Get counters interval period
   virtual std::chrono::seconds get_counters_timer_period() = 0;
+
   /// Get counters interval offset to launch
   virtual std::chrono::seconds get_counters_timer_offset() = 0;
 
@@ -101,10 +103,13 @@ private:
 
   /// Configuration for an UUID forwarder
   struct forwarder_config {
+
     /// UUID consumer
     std::unique_ptr<UUIDConsumerFactory> consumer_factory;
+
     /// UUID producer
     std::shared_ptr<UUIDProducer> producer;
+
     /// Time to produce
     std::chrono::seconds period, offset;
   } m_counters;
@@ -113,6 +118,5 @@ private:
       struct JsonConfig::forwarder_config &fw_config);
   std::vector<std::string> m_counters_uuid;
 };
-
-}; // namespace Configuration
-}; // namespace EventsCounter
+};
+};

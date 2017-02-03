@@ -19,105 +19,92 @@
 
 #include "TestUtils.h"
 
-#include "UUIDCountersDB/UUIDCountersDBKafka.h"
+#include "../src/counter_formatter/kafka_json_counter_formatter.hpp"
+#include "../src/uuid_counters_db/uuid_counters_db.hpp"
 
 #include <gtest/gtest.h>
 #include <rapidjson/document.h>
 
 using namespace std;
 using namespace EventsCounter;
+using namespace EventsCounter::CounterFormatter;
 
 namespace {
 
 class UUIDConsumerTest : public ::testing::Test {
 public:
-	static void counter_test() {
-		static const map<string, uint64_t> counters{
-				{"1", 0}, {"2", 10}, {"3", 20}};
+  static void counter_test() {
+    static const map<string, uint64_t> counters{{"1", 0}, {"2", 10}, {"3", 20}};
 
-		unique_ptr<CounterToKafkaFormatter> formatter(
-				CounterToKafkaFormatter::create());
+    unique_ptr<CounterFormatter::KafkaJSONCounterFormatter> formatter(
+        new KafkaJSONCounterFormatter());
 
-		for (const auto &counter : counters) {
-			rapidjson::Document d;
-			std::unique_ptr<RdKafka::Message> msg =
-					formatter->format(counter.first,
-							  counter.second);
+    for (const auto &counter : counters) {
+      rapidjson::Document d;
+      std::unique_ptr<RdKafka::Message> msg =
+          formatter->format(counter.first, counter.second);
 
-			ASSERT_EQ(*msg->key(), counter.first);
-			d.Parse(static_cast<char *>(msg->payload()),
-				msg->len());
-			ASSERT_FALSE(d.HasParseError());
+      ASSERT_EQ(*msg->key(), counter.first);
+      d.Parse(static_cast<char *>(msg->payload()), msg->len());
+      ASSERT_FALSE(d.HasParseError());
 
-			const vector<struct json_child<string>>
-					expected_strings {
+      const vector<struct json_child<string>> expected_strings {
 
-				{"type", "data"}, {"unit", "bytes"},
-						{"monitor", "uuid_received"},
-						{"uuid", counter.first},
-			};
-			const vector<struct json_child<uint64_t>>
-					expected_numbers {
-				// @todo check timestamp somehow
-				// {"timestamp", current_unix_timestamp()},
-				{"value", counter.second},
-			};
+        {"type", "data"}, {"unit", "bytes"}, {"monitor", "uuid_received"},
+            {"uuid", counter.first},
+      };
+      const vector<struct json_child<uint64_t>> expected_numbers {
+        // @todo check timestamp somehow
+        // {"timestamp", current_unix_timestamp()},
+        {"value", counter.second},
+      };
 
-			/// @todo can't pass callback in template?
-			for (const auto &expected_child : expected_strings) {
-				assert_json_member(
-						d,
-						expected_child.key,
-						expected_child.value,
-						&rapidjson::Value::GetString);
-			}
+      /// @todo can't pass callback in template?
+      for (const auto &expected_child : expected_strings) {
+        assert_json_member(d, expected_child.key, expected_child.value,
+                           &rapidjson::Value::GetString);
+      }
 
-			for (const auto &expected_child : expected_numbers) {
-				assert_json_member(d,
-						   expected_child.key,
-						   expected_child.value,
-						   &rapidjson::Document::
-								   GetUint64);
-			}
-		}
-	}
+      for (const auto &expected_child : expected_numbers) {
+        assert_json_member(d, expected_child.key, expected_child.value,
+                           &rapidjson::Document::GetUint64);
+      }
+    }
+  }
 
 private:
-	/// Aux struct to help checking
-	template <typename T> struct json_child {
-		const char *key;
-		T value;
-	};
+  /// Aux struct to help checking
+  template <typename T> struct json_child {
+    const char *key;
+    T value;
+  };
 
-	template <typename T, typename F>
-	static void assert_json_member(const rapidjson::Value &document,
-				       const char *key,
-				       const T &expected,
-				       F value_cb) {
-		const auto itr = document.FindMember(key);
-		ASSERT_NE(itr, document.MemberEnd());
-		ASSERT_EQ((itr->value.*value_cb)(), expected);
-	}
+  template <typename T, typename F>
+  static void assert_json_member(const rapidjson::Value &document,
+                                 const char *key, const T &expected,
+                                 F value_cb) {
+    const auto itr = document.FindMember(key);
+    ASSERT_NE(itr, document.MemberEnd());
+    ASSERT_EQ((itr->value.*value_cb)(), expected);
+  }
 };
 
-TEST_F(UUIDConsumerTest, consumer_uuid) {
-	EXPECT_NO_THROW(counter_test());
-}
+TEST_F(UUIDConsumerTest, consumer_uuid) { EXPECT_NO_THROW(counter_test()); }
 
 } // anonymous namespace
 
 int main(int argc, char **argv) {
-	::testing::InitGoogleTest(&argc, argv);
+  ::testing::InitGoogleTest(&argc, argv);
 
-	const int rc = RUN_ALL_TESTS();
+  const int rc = RUN_ALL_TESTS();
 
-	for (int i = 0; i < 10; ++i) {
-		static const int timeout_ms = 100;
-		const int destroy_rc = RdKafka::wait_destroyed(timeout_ms);
-		if (0 == destroy_rc) {
-			break;
-		}
-	}
+  for (int i = 0; i < 10; ++i) {
+    static const int timeout_ms = 100;
+    const int destroy_rc = RdKafka::wait_destroyed(timeout_ms);
+    if (0 == destroy_rc) {
+      break;
+    }
+  }
 
-	return rc;
+  return rc;
 }

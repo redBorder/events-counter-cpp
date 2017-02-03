@@ -40,28 +40,28 @@ using namespace EventsCounter::Configuration;
 
 class UUIDConsumerTest : public ::testing::Test {
 protected:
-	static string vector_to_json(const vector<string> &svector) {
-		stringstream ret;
-		for (auto i = svector.cbegin(); i != svector.cend(); i++) {
-			if (i != svector.cbegin()) {
-				ret << ',';
-			}
-			ret << "\"" << *i << "\"";
-		}
+  static string vector_to_json(const vector<string> &svector) {
+    stringstream ret;
+    for (auto i = svector.cbegin(); i != svector.cend(); i++) {
+      if (i != svector.cbegin()) {
+        ret << ',';
+      }
+      ret << "\"" << *i << "\"";
+    }
 
-		return ret.str();
-	}
+    return ret.str();
+  }
 
-	static string test_config(const vector<string> &read_topics,
-				  const string &read_group_id,
-				  const string &write_topic,
-				  const string &json_uuid_key,
-				  const vector<string> &uuids) {
-		const string read_topics_s = vector_to_json(read_topics);
-		const string uuids_s = vector_to_json(uuids);
+  static string test_config(const vector<string> &read_topics,
+                            const string &read_group_id,
+                            const string &write_topic,
+                            const string &json_uuid_key,
+                            const vector<string> &uuids) {
+    const string read_topics_s = vector_to_json(read_topics);
+    const string uuids_s = vector_to_json(uuids);
 
-		stringstream ss;
-		// clang-format off
+    stringstream ss;
+    // clang-format off
 		ss << '{' <<
                     "\"counters_config\":{" <<
                         "\"timer_seconds\": {" <<
@@ -80,87 +80,80 @@ protected:
                         "}" <<
                     "}, \"uuids\": [" << uuids_s << ']' <<
                '}';
-		// clang-format on
+    // clang-format on
 
-		return ss.str();
-	}
+    return ss.str();
+  }
 
-	static map<string, uint64_t>
-	uuid_vector_to_map(const vector<string> uuids) {
-		map<string, uint64_t> ret;
-		for (const auto &uuid : uuids) {
-			ret[uuid] = 0;
-		}
-		return ret;
-	}
+  static map<string, uint64_t> uuid_vector_to_map(const vector<string> uuids) {
+    map<string, uint64_t> ret;
+    for (const auto &uuid : uuids) {
+      ret[uuid] = 0;
+    }
+    return ret;
+  }
 
 public:
-	static void counter_test() {
-		static const string json_uuid_key = "sensor_uuid";
-		static const string uuid = "123456";
-		static const string invalid_uuid = uuid + "7";
-		const string read_topic = random_topic();
-		const string group_id = string("group_") + read_topic;
-		const string write_topic = random_topic();
+  static void counter_test() {
+    static const string json_uuid_key = "sensor_uuid";
+    static const string uuid = "123456";
+    static const string invalid_uuid = uuid + "7";
+    const string read_topic = random_topic();
+    const string group_id = string("group_") + read_topic;
+    const string write_topic = random_topic();
 
-		unique_ptr<RdKafka::Conf> conf =
-				create_test_kafka_consumer_config("kafka:9092",
-								  group_id);
-		unique_ptr<Config> config(JsonConfig::json_parse(
-				test_config(vector<string>{read_topic},
-					    group_id,
-					    write_topic,
-					    json_uuid_key,
-					    vector<string>{uuid})));
-		unique_ptr<UUIDConsumer::UUIDConsumer> uuid_consumer =
-				config->get_counters_consumer();
-		EventsCounter::UUIDCountersDB::counters_t aux_counters =
-				uuid_vector_to_map(config->counters_uuids());
-		UUIDCounter::UUIDCounter counter(uuid_consumer.release(),
-						 UUIDCountersDB(aux_counters));
+    unique_ptr<RdKafka::Conf> conf =
+        create_test_kafka_consumer_config("kafka:9092", group_id);
+    unique_ptr<Config> config(JsonConfig::json_parse(
+        test_config(vector<string>{read_topic}, group_id, write_topic,
+                    json_uuid_key, vector<string>{uuid})));
+    unique_ptr<UUIDConsumer::UUIDConsumer> uuid_consumer =
+        config->get_counters_consumer();
+    UUIDCountersDB::UUIDCountersDB::counters_t aux_counters =
+        uuid_vector_to_map(config->counters_uuids());
+    UUIDCounter::UUIDCounter counter(
+        uuid_consumer.release(), UUIDCountersDB::UUIDCountersDB(aux_counters));
 
-		// Invalid UUID, should ignore
-		UUIDProduce(json_uuid_key, invalid_uuid, read_topic);
-		// Valid UUID, should accept
-		UUIDProduce(json_uuid_key, uuid, read_topic);
-		while (true) {
-			counter.swap_counters(aux_counters);
-			if (aux_counters[uuid] != 0) {
-				break;
-			}
+    // Invalid UUID, should ignore
+    UUIDProduce(json_uuid_key, invalid_uuid, read_topic);
+    // Valid UUID, should accept
+    UUIDProduce(json_uuid_key, uuid, read_topic);
+    while (true) {
+      counter.swap_counters(aux_counters);
+      if (aux_counters[uuid] != 0) {
+        break;
+      }
 
-			sleep(1); // @TODO C++ version?
-		}
+      sleep(1); // @TODO C++ version?
+    }
 
-		// Check that any map contains invalid uuid
-		ASSERT_EQ(aux_counters.find(invalid_uuid), aux_counters.end());
-		counter.swap_counters(aux_counters);
-		ASSERT_EQ(aux_counters.find(invalid_uuid), aux_counters.end());
-		counter.swap_counters(aux_counters);
+    // Check that any map contains invalid uuid
+    ASSERT_EQ(aux_counters.find(invalid_uuid), aux_counters.end());
+    counter.swap_counters(aux_counters);
+    ASSERT_EQ(aux_counters.find(invalid_uuid), aux_counters.end());
+    counter.swap_counters(aux_counters);
 
-		// And bytes have been incremented for valid one
-		ASSERT_NE(aux_counters[uuid], 0);
-	}
+    // And bytes have been incremented for valid one
+    ASSERT_NE(aux_counters[uuid], 0);
+  }
 };
 
-TEST_F(UUIDConsumerTest, consumer_uuid) {
-	EXPECT_NO_THROW(counter_test());
-}
+TEST_F(UUIDConsumerTest, consumer_uuid) { EXPECT_NO_THROW(counter_test()); }
 
 } // anonymous namespace
 
 int main(int argc, char **argv) {
-	::testing::InitGoogleTest(&argc, argv);
+  ::testing::InitGoogleTest(&argc, argv);
 
-	const int rc = RUN_ALL_TESTS();
+  const int rc = RUN_ALL_TESTS();
 
-	for (int i = 0; i < 10; ++i) {
-		static const int timeout_ms = 100;
-		const int destroy_rc = RdKafka::wait_destroyed(timeout_ms);
-		if (0 == destroy_rc) {
-			break;
-		}
-	}
+  for (int i = 0; i < 10; ++i) {
+    static const int timeout_ms = 100;
+    const int destroy_rc = RdKafka::wait_destroyed(timeout_ms);
+    if (0 == destroy_rc) {
+      break;
+    }
+  }
 
-	return rc;
+  return rc;
 }
