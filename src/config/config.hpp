@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "../UUIDProducer/UUIDProducer.h"
+#include "../monitor_producer/monitor_producer.hpp"
 #include "../uuid_consumer/uuid_consumer.hpp"
 #include "../uuid_counters_db/uuid_counters_db.hpp"
 
@@ -31,7 +31,6 @@
 #include <vector>
 
 namespace EventsCounter {
-
 namespace Configuration {
 
 // TODO this should be splitted in conf and JSON parser that produces a conf
@@ -39,10 +38,11 @@ namespace Configuration {
 class Config {
 public:
   virtual ~Config() {}
-
   virtual std::unique_ptr<UUIDConsumer::UUIDConsumer>
   get_counters_consumer() = 0;
-  virtual std::shared_ptr<UUIDProducer> get_counters_producer() = 0;
+
+  virtual std::shared_ptr<MonitorProducer::MonitorProducer>
+  get_counters_producer() = 0;
 
   /// Get counters interval period
   virtual std::chrono::seconds get_counters_timer_period() = 0;
@@ -82,7 +82,8 @@ public:
     return this->m_counters.consumer_factory->create();
   }
 
-  virtual std::shared_ptr<UUIDProducer> get_counters_producer() {
+  virtual std::shared_ptr<MonitorProducer::MonitorProducer>
+  get_counters_producer() {
     return this->m_counters.producer;
   }
 
@@ -108,7 +109,7 @@ private:
     std::unique_ptr<UUIDConsumerFactory> consumer_factory;
 
     /// UUID producer
-    std::shared_ptr<UUIDProducer> producer;
+    std::shared_ptr<MonitorProducer::MonitorProducer> producer;
 
     /// Time to produce
     std::chrono::seconds period, offset;

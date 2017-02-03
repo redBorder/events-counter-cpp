@@ -136,7 +136,8 @@ int main(int argc, char **argv) {
   UUIDCountersDB::UUIDCountersDB::counters_t aux_counters =
       make_uuid_counters_boostrap_db(config->counters_uuids());
   UUIDCountersDB::UUIDCountersDB boostrap_uuid_db(aux_counters);
-  std::shared_ptr<UUIDProducer> producer = config->get_counters_producer();
+  std::shared_ptr<MonitorProducer::MonitorProducer> producer =
+      config->get_counters_producer();
 
   /// @TODO UUID counter should accept consumer in unique_ptr<> reference
   /// to reference

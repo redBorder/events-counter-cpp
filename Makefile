@@ -15,7 +15,7 @@ SRCS= src/main.cpp \
 	src/counter_formatter/json_kafka_message.cpp \
 	src/counter_formatter/kafka_json_counter_formatter.cpp \
 	src/uuid_counters_monitor/kafka_leadership_monitor.cpp \
-	src/UUIDProducer/UUIDKafkaTopicProducer.cpp
+	src/monitor_producer/kafka_monitor_producer.cpp
 OBJS= $(SRCS:.cpp=.o)
 
 TESTS_C = $(wildcard tests/0*.cpp)
