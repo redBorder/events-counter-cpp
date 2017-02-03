@@ -27,8 +27,8 @@ namespace Utils {
 
 class JSON : public rapidjson::Document {
 public:
-	/// Zero copy constructor from string buffer
-	JSON(char *buf, size_t len);
+  /// Zero copy constructor from string buffer
+  JSON(char *buf, size_t len);
 };
 };
 };
