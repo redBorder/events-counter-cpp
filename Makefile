@@ -5,11 +5,17 @@ BIN=events_counter
 $(BIN): CC=$(CXX)
 
 SRCS_SFLOW_$(WITH_SFLOW) += sflow_collect.c
-SRCS= src/main.cpp version.cpp src/UUIDCountersDB/UUIDCountersDB.cpp \
-	src/UUIDConsumer/UUIDConsumerKafka.cpp src/UUIDCounter/UUIDCounter.cpp \
-	src/UUIDCountersMonitor/LeadershipMonitorKafka.cpp src/Utils/JSON.cpp \
-	src/Config/Config.cpp src/UUIDCountersDB/UUIDCountersDBKafka.cpp \
-	src/UUIDProducer/UUIDKafkaTopicProducer.cpp
+SRCS= src/main.cpp \
+	version.cpp \
+	src/utils/json_zerocopy.cpp \
+	src/config/config.cpp \
+	src/uuid_consumer/kafka_uuid_consumer.cpp \
+	src/uuid_counter/uuid_counter.cpp \
+	src/uuid_counters_db/uuid_counters_db.cpp \
+	src/counter_formatter/json_kafka_message.cpp \
+	src/counter_formatter/kafka_json_counter_formatter.cpp \
+	src/uuid_counters_monitor/kafka_leadership_monitor.cpp \
+	src/monitor_producer/kafka_monitor_producer.cpp
 OBJS= $(SRCS:.cpp=.o)
 
 TESTS_C = $(wildcard tests/0*.cpp)
