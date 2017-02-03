@@ -1,10 +1,10 @@
-#include "UUIDCounter.h"
+#include "uuid_counter.hpp"
 
 #include <iostream>
 #include <map>
 
 using namespace std;
-using namespace EventsCounter;
+using namespace EventsCounter::UUIDCounter;
 
 void UUIDCounter::run(UUIDCounter *instance,
 		      UUIDConsumer::UUIDConsumer *consumer) {

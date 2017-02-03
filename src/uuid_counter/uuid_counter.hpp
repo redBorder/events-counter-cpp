@@ -1,5 +1,4 @@
-#ifndef COUNTER_H
-#define COUNTER_H
+#pragma once
 
 #include "../UUIDCountersDB/UUIDCountersDB.h"
 #include "../uuid_consumer/uuid_consumer.hpp"
@@ -10,6 +9,7 @@
 #include <thread>
 
 namespace EventsCounter {
+namespace UUIDCounter {
 
 class UUIDCounter {
 private:
@@ -23,22 +23,11 @@ private:
 	run(UUIDCounter *instance, UUIDConsumer::UUIDConsumer *consumer);
 
 public:
-	/**
-	 *
-	 */
 	UUIDCounter(UUIDConsumer::UUIDConsumer *t_consumer,
 		    UUIDCountersDB counters_boostrap)
 	    : consumer(t_consumer), uuid_counters_db(counters_boostrap) {
 	}
-
-	/**
-	 *
-	 */
 	~UUIDCounter();
-
-	/**
-	 *
-	 */
 	UUIDCounter &operator=(const UUIDCounter &) = delete;
 
 	/**
@@ -49,4 +38,4 @@ public:
 	void swap_counters(UUIDCountersDB::counters_t &counter_db);
 };
 };
-#endif /* COUNTER_H */
+};

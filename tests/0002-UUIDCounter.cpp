@@ -19,9 +19,9 @@
 
 #include "TestUtils.h"
 
-#include "../src/UUIDCounter/UUIDCounter.h"
 #include "../src/config/config.hpp"
 #include "../src/uuid_consumer/kafka_uuid_consumer.hpp"
+#include "../src/uuid_counter/uuid_counter.hpp"
 
 #include <gtest/gtest.h>
 #include <librdkafka/rdkafkacpp.h>
@@ -116,8 +116,8 @@ public:
 				config->get_counters_consumer();
 		EventsCounter::UUIDCountersDB::counters_t aux_counters =
 				uuid_vector_to_map(config->counters_uuids());
-		UUIDCounter counter(uuid_consumer.release(),
-				    UUIDCountersDB(aux_counters));
+		UUIDCounter::UUIDCounter counter(uuid_consumer.release(),
+						 UUIDCountersDB(aux_counters));
 
 		// Invalid UUID, should ignore
 		UUIDProduce(json_uuid_key, invalid_uuid, read_topic);

@@ -6,7 +6,7 @@ $(BIN): CC=$(CXX)
 
 SRCS_SFLOW_$(WITH_SFLOW) += sflow_collect.c
 SRCS= src/main.cpp version.cpp src/UUIDCountersDB/UUIDCountersDB.cpp \
-	src/uuid_consumer/kafka_uuid_consumer.cpp src/UUIDCounter/UUIDCounter.cpp \
+	src/uuid_consumer/kafka_uuid_consumer.cpp src/uuid_counter/uuid_counter.cpp \
 	src/UUIDCountersMonitor/LeadershipMonitorKafka.cpp src/utils/json_zerocopy.cpp \
 	src/config/config.cpp src/UUIDCountersDB/UUIDCountersDBKafka.cpp \
 	src/UUIDProducer/UUIDKafkaTopicProducer.cpp

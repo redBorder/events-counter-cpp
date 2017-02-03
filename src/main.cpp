@@ -17,8 +17,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "UUIDCounter/UUIDCounter.h"
 #include "config/config.hpp"
+#include "uuid_counter/uuid_counter.hpp"
 
 #include <chrono>
 #include <fstream>
@@ -145,8 +145,9 @@ int main(int argc, char **argv) {
 
 	/// @TODO UUID counter should accept consumer in unique_ptr<> reference
 	/// to reference
-	UUIDCounter counter(config->get_counters_consumer().release(),
-			    boostrap_uuid_db);
+	UUIDCounter::UUIDCounter counter(
+			config->get_counters_consumer().release(),
+			boostrap_uuid_db);
 	for (;;) {
 		const chrono::seconds ticks_period =
 				config->get_counters_timer_period();
