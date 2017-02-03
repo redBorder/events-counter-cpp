@@ -29,32 +29,36 @@ using namespace EventsCounter;
 using namespace rapidjson;
 using namespace RdKafka;
 
+/// @TODO improve error messages
+UUIDBytes CounterUUIDJSONKafkaConsumer::get_message_uuid_bytes(
+		const std::string &t_json_uuid_key,
+		const RdKafka::Message *message) const {
+	JSON json(static_cast<char *>(message->payload()), message->len());
+
+	if (json.HasParseError()) {
+		cerr << "Couldn't parse message JSON" << endl;
+		return UUIDBytes();
+	}
+
+	if (!json.IsObject() || !json.HasMember(t_json_uuid_key.c_str()) ||
+	    !json[t_json_uuid_key.c_str()].IsString()) {
+		return UUIDBytes();
+	}
+
+	Value &uuid = json[t_json_uuid_key.c_str()];
+	string uuid_str = uuid.GetString();
+
+	return UUIDBytes(uuid_str, message->len());
+}
+
 UUIDBytes UUIDConsumerKafka::consume(uint32_t timeout) const {
 	unique_ptr<Message> message(this->kafka_consumer->consume(timeout));
 
 	const int err = message->err();
 	switch (err) {
-	case ERR_NO_ERROR: {
-		JSON json(static_cast<char *>(const_cast<void *>(
-					  message->payload())),
-			  message->len());
-
-		if (json.HasParseError()) {
-			cerr << "Couldn't parse message JSON" << endl;
-			break;
-		}
-
-		if (!json.IsObject() ||
-		    !json.HasMember(this->json_uuid_key.c_str()) ||
-		    !json[this->json_uuid_key.c_str()].IsString()) {
-			break;
-		}
-
-		Value &uuid = json[this->json_uuid_key.c_str()];
-		string uuid_str = uuid.GetString();
-
-		return UUIDBytes(uuid_str, message->len());
-	}
+	case ERR_NO_ERROR:
+		return get_message_uuid_bytes(this->json_uuid_key,
+					      message.get());
 
 	case ERR__TIMED_OUT:
 	case ERR__PARTITION_EOF:

@@ -112,7 +112,8 @@ public:
 					    write_topic,
 					    json_uuid_key,
 					    vector<string>{uuid})));
-		unique_ptr<UUIDConsumer> uuid_consumer = config->get_consumer();
+		unique_ptr<UUIDConsumer> uuid_consumer =
+				config->get_counters_consumer();
 		EventsCounter::UUIDCountersDB::counters_t aux_counters =
 				uuid_vector_to_map(config->counters_uuids());
 		UUIDCounter counter(uuid_consumer.release(),

@@ -23,6 +23,8 @@
 #include "UUIDCountersDB/UUIDCountersDB.h"
 #include "UUIDProducer/UUIDProducer.h"
 
+#include <rapidjson/document.h>
+
 #include <chrono>
 #include <iostream> // @TODO delete
 #include <memory>
@@ -39,12 +41,13 @@ public:
 	virtual ~Config() {
 	}
 
-	virtual std::unique_ptr<UUIDConsumer> get_consumer() = 0;
-	virtual std::shared_ptr<UUIDProducer> get_producer() = 0;
+	virtual std::unique_ptr<UUIDConsumer> get_counters_consumer() = 0;
+	virtual std::shared_ptr<UUIDProducer> get_counters_producer() = 0;
 	/// Get counters interval period
 	virtual std::chrono::seconds get_counters_timer_period() = 0;
 	/// Get counters interval offset to launch
 	virtual std::chrono::seconds get_counters_timer_offset() = 0;
+
 	virtual const std::vector<std::string> &counters_uuids() = 0;
 
 protected:
@@ -73,27 +76,26 @@ public:
 
 	class UUIDConsumerFactory {
 	public:
-		virtual UUIDConsumer *create() = 0;
+		virtual std::unique_ptr<UUIDConsumer> create() = 0;
 		virtual ~UUIDConsumerFactory() {
 		}
 	};
 
 	static JsonConfig *json_parse(const std::string &json_text);
-	virtual std::unique_ptr<UUIDConsumer> get_consumer() {
-		return std::unique_ptr<UUIDConsumer>(
-				m_counters_uuid_consumer_factory->create());
+	virtual std::unique_ptr<UUIDConsumer> get_counters_consumer() {
+		return this->m_counters.consumer_factory->create();
 	}
 
-	virtual std::shared_ptr<UUIDProducer> get_producer() {
-		return m_producer;
+	virtual std::shared_ptr<UUIDProducer> get_counters_producer() {
+		return this->m_counters.producer;
 	}
 
 	virtual std::chrono::seconds get_counters_timer_period() {
-		return this->m_counters_period;
+		return this->m_counters.period;
 	}
 	/// Get counters interval offset to launch
 	virtual std::chrono::seconds get_counters_timer_offset() {
-		return this->m_counters_offset;
+		return this->m_counters.offset;
 	}
 
 	virtual const std::vector<std::string> &counters_uuids() {
@@ -104,10 +106,18 @@ private:
 	JsonConfig() {
 	}
 
-	/// Counters consumer factory
-	std::unique_ptr<UUIDConsumerFactory> m_counters_uuid_consumer_factory;
-	std::shared_ptr<UUIDProducer> m_producer;
-	std::chrono::seconds m_counters_period, m_counters_offset;
+	/// Configuration for an UUID forwarder
+	struct forwarder_config {
+		/// UUID consumer
+		std::unique_ptr<UUIDConsumerFactory> consumer_factory;
+		/// UUID producer
+		std::shared_ptr<UUIDProducer> producer;
+		/// Time to produce
+		std::chrono::seconds period, offset;
+	} m_counters;
+	static void parse_counter_consumer_configuration(
+			const rapidjson::Value::ConstObject &counters_config,
+			struct JsonConfig::forwarder_config &fw_config);
 	std::vector<std::string> m_counters_uuid;
 };
 

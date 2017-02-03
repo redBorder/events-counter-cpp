@@ -39,6 +39,11 @@ private:
 	/// UUID field in kafka JSON message
 	std::string json_uuid_key;
 
+protected:
+	virtual UUIDBytes
+	get_message_uuid_bytes(const std::string &json_uuid_key,
+			       const RdKafka::Message *message) const = 0;
+
 public:
 	UUIDConsumerKafka(const std::vector<std::string> &topics,
 			  const std::string json_uuid_key,
@@ -58,5 +63,16 @@ public:
 	 * @return         Pair with UUID and number of bytes of the message.
 	 */
 	UUIDBytes consume(uint32_t timeout_ms) const;
+};
+
+/// Transforms counter kafka input message in UUIDBytes format
+class CounterUUIDJSONKafkaConsumer : public UUIDConsumerKafka {
+public:
+	using UUIDConsumerKafka::UUIDConsumerKafka;
+
+private:
+	virtual UUIDBytes
+	get_message_uuid_bytes(const std::string &json_uuid_key,
+			       const RdKafka::Message *message) const;
 };
 };

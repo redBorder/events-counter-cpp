@@ -79,7 +79,7 @@ public:
 	~KafkaUUIDConsumerFactory() {
 	}
 
-	UUIDConsumer *create() {
+	std::unique_ptr<UUIDConsumer> create() {
 		string errstr;
 		unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(
 				RdKafka::Conf::CONF_GLOBAL)),
@@ -94,9 +94,11 @@ public:
 					"kafka");
 		conf->set("default_topic_conf", tconf.get(), errstr);
 
-		return new UUIDConsumerKafka(this->m_read_topics,
-					     m_json_uuid_key,
-					     conf.get());
+		return std::unique_ptr<UUIDConsumer>(
+				new CounterUUIDJSONKafkaConsumer(
+						this->m_read_topics,
+						m_json_uuid_key,
+						conf.get()));
 	}
 
 private:
@@ -321,9 +323,6 @@ JsonConfig *JsonConfig::json_parse(const std::string &text_config) {
 
 	Document d;
 	d.Parse(text_config.c_str());
-	KafkaUUIDConsumerFactory::kafka_conf_list counter_consumer_rk_conf_v,
-			counter_consumer_rkt_conf_v, counter_producer_rk_conf_v,
-			counter_producer_rkt_conf_v;
 
 	if (d.HasParseError()) {
 		throw JSONParserException(GetParseError_En(d.GetParseError()));
@@ -344,31 +343,45 @@ JsonConfig *JsonConfig::json_parse(const std::string &text_config) {
 	const Value::ConstObject counters_config = JSON::get_object_object(
 			d.GetObject(), "counters_config");
 
+	parse_counter_consumer_configuration(counters_config, ret->m_counters);
+
+	return ret.release();
+}
+
+void JsonConfig::parse_counter_consumer_configuration(
+		const Value::ConstObject &json_config,
+		struct JsonConfig::forwarder_config &fw_config) {
+	KafkaUUIDConsumerFactory::kafka_conf_list counter_consumer_rk_conf_v,
+			counter_consumer_rkt_conf_v, counter_producer_rk_conf_v,
+			counter_producer_rkt_conf_v;
+
 	{
-		// Consumer
-		const Value::ConstArray json_read_topics =
-				JSON::get_object_array(counters_config,
-						       "read_topics",
-						       "counters_config");
-
-		vector<string> counter_read_topics = JSON::get_string_vector(
-				"read_topics", json_read_topics);
-
+		// Parse consumer & producer properties
 		const Value::ConstObject &counter_rdkafka_config =
-				JSON::get_object_object(counters_config,
-							"rdkafka");
-
-		const string counter_uuid_key = JSON::get_object_string(
-				counters_config, "json_read_uuid_key");
+				JSON::get_object_object(json_config, "rdkafka");
 
 		parse_kafka_forwarder_properties(counter_rdkafka_config,
 						 counter_consumer_rk_conf_v,
 						 counter_consumer_rkt_conf_v,
 						 counter_producer_rk_conf_v,
 						 counter_producer_rkt_conf_v);
+	}
 
-		ret->m_counters_uuid_consumer_factory = unique_ptr<
-				KafkaUUIDConsumerFactory>(
+	{
+		// Consumer
+		const Value::ConstArray json_read_topics =
+				JSON::get_object_array(json_config,
+						       "read_topics",
+						       "counters_config");
+
+		const string counter_uuid_key = JSON::get_object_string(
+				json_config, "json_read_uuid_key");
+
+		vector<string> counter_read_topics = JSON::get_string_vector(
+				"read_topics", json_read_topics);
+
+		fw_config.consumer_factory = unique_ptr<
+				JsonConfig::UUIDConsumerFactory>(
 				new KafkaUUIDConsumerFactory(
 						counter_read_topics,
 						counter_uuid_key,
@@ -379,22 +392,20 @@ JsonConfig *JsonConfig::json_parse(const std::string &text_config) {
 	{
 		// Timer for produce messages
 		const Value::ConstObject timer =
-				JSON::get_object_object(counters_config,
+				JSON::get_object_object(json_config,
 							"timer_seconds",
 							"counters_config");
-		ret->m_counters_period = chrono::seconds(JSON::get_object_int(
+		fw_config.period = chrono::seconds(JSON::get_object_int(
 				timer, "period", "timer_seconds"));
 
-		ret->m_counters_offset = chrono::seconds(JSON::get_object_int(
+		fw_config.offset = chrono::seconds(JSON::get_object_int(
 				timer, "offset", "timer_seconds"));
 	}
 
 	{
 		string errstr;
-		const string counter_write_topic =
-				JSON::get_object_string(counters_config,
-							"write_topic",
-							"counters_config");
+		const string counter_write_topic = JSON::get_object_string(
+				json_config, "write_topic", "counters_config");
 
 		/// Producer config
 		unique_ptr<RdKafka::Conf> conf(RdKafka::Conf::create(
@@ -418,9 +429,7 @@ JsonConfig *JsonConfig::json_parse(const std::string &text_config) {
 						       counter_write_topic,
 						       tconf.get(),
 						       errstr));
-		ret->m_producer = make_shared<UUIDKafkaTopicProducer>(
+		fw_config.producer = make_shared<UUIDKafkaTopicProducer>(
 				rk.release(), rkt.release());
 	}
-
-	return ret.release();
 }
