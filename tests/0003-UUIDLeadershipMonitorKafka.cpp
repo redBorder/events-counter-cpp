@@ -19,7 +19,7 @@
 
 #include "TestUtils.h"
 
-#include "../src/UUIDCountersMonitor/LeadershipMonitorKafka.h"
+#include "../src/uuid_counters_monitor/kafka_leadership_monitor.hpp"
 
 #include <gtest/gtest.h>
 #include <librdkafka/rdkafkacpp.h>
@@ -33,68 +33,65 @@
 namespace {
 
 using namespace std;
-using namespace EventsCounter;
+using namespace EventsCounter::UUIDCountersMonitor;
 using namespace EventsCounter::TestUtils;
 
 class LeadershipMonitorTest : public ::testing::Test {
 protected:
-	static char *rand_tmpl(char *tmpl) {
-		int fd = mkstemp(tmpl);
-		close(fd);
-		remove(tmpl);
+  static char *rand_tmpl(char *tmpl) {
+    int fd = mkstemp(tmpl);
+    close(fd);
+    remove(tmpl);
 
-		return tmpl;
-	}
+    return tmpl;
+  }
 };
 
 TEST_F(LeadershipMonitorTest, leadership) {
-	uint8_t retries = 30;
-	chrono::milliseconds retry_timeout_ms(1000);
+  uint8_t retries = 30;
+  chrono::milliseconds retry_timeout_ms(1000);
 
-	char tmpl[] = "XXXXXX";
-	string rand_str(rand_tmpl(tmpl));
-	string topic("topic_" + rand_str);
-	string group("group_" + rand_str);
+  char tmpl[] = "XXXXXX";
+  string rand_str(rand_tmpl(tmpl));
+  string topic("topic_" + rand_str);
+  string group("group_" + rand_str);
 
-	// Produce a dummy message to force Kafka to create a partition
-	UUIDProduce("uuid", "dummy", topic);
+  // Produce a dummy message to force Kafka to create a partition
+  UUIDProduce("uuid", "dummy", topic);
 
-	vector<unique_ptr<LeadershipMonitorKafka>> instances;
-	for (uint32_t i = 0; i < 5; i++) {
-		unique_ptr<LeadershipMonitorKafka> instance(
-				new LeadershipMonitorKafka(
-						"kafka:9092", topic, group));
-		instances.push_back(move(instance));
-	}
+  vector<unique_ptr<KafkaLeadershipMonitor>> instances;
+  for (uint32_t i = 0; i < 5; i++) {
+    unique_ptr<KafkaLeadershipMonitor> instance(
+        new KafkaLeadershipMonitor("kafka:9092", topic, group));
+    instances.push_back(move(instance));
+  }
 
-	while (instances.size() > 0 || retries-- > 0) {
-		for (auto &instance : instances) {
-			if (instance->check_leadership(retry_timeout_ms)) {
-				instances.erase(remove(instances.begin(),
-						       instances.end(),
-						       instance),
-						instances.end());
-				break;
-			}
-		}
-	}
+  while (instances.size() > 0 || retries-- > 0) {
+    for (auto &instance : instances) {
+      if (instance->check_leadership(retry_timeout_ms)) {
+        instances.erase(remove(instances.begin(), instances.end(), instance),
+                        instances.end());
+        break;
+      }
+    }
+  }
 
-	EXPECT_EQ(instances.size(), 0);
+  EXPECT_EQ(instances.size(), 0);
 }
 } // anonymous namespace
 
 int main(int argc, char **argv) {
-	::testing::InitGoogleTest(&argc, argv);
+  ::testing::InitGoogleTest(&argc, argv);
 
-	const int rc = RUN_ALL_TESTS();
+  const int rc = RUN_ALL_TESTS();
 
-	for (int i = 0; i < 10; ++i) {
-		static const int timeout_ms = 100;
-		const int destroy_rc = RdKafka::wait_destroyed(timeout_ms);
-		if (0 == destroy_rc) {
-			break;
-		}
-	}
+  for (int i = 0; i < 10; ++i) {
+    static const int timeout_ms = 100;
+    const int destroy_rc = RdKafka::wait_destroyed(timeout_ms);
+    if (0 == destroy_rc) {
+      break;
+    }
+  }
 
-	return rc;
+  return rc;
 }

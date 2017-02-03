@@ -14,7 +14,7 @@ SRCS= src/main.cpp \
 	src/uuid_counters_db/uuid_counters_db.cpp \
 	src/counter_formatter/json_kafka_message.cpp \
 	src/counter_formatter/kafka_json_counter_formatter.cpp \
-	src/UUIDCountersMonitor/LeadershipMonitorKafka.cpp \
+	src/uuid_counters_monitor/kafka_leadership_monitor.cpp \
 	src/UUIDProducer/UUIDKafkaTopicProducer.cpp
 OBJS= $(SRCS:.cpp=.o)
 
