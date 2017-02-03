@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "../utils/uuid_bytes.hpp"
 #include "UUIDProducer.h"
 
 #include <librdkafka/rdkafkacpp.h>

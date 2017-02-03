@@ -1,8 +1,8 @@
 #ifndef COUNTER_H
 #define COUNTER_H
 
-#include "../UUIDConsumer/UUIDConsumer.h"
 #include "../UUIDCountersDB/UUIDCountersDB.h"
+#include "../uuid_consumer/uuid_consumer.hpp"
 
 #include <atomic>
 #include <memory>
@@ -13,19 +13,21 @@ namespace EventsCounter {
 
 class UUIDCounter {
 private:
-	std::unique_ptr<UUIDConsumer> consumer;
+	std::unique_ptr<UUIDConsumer::UUIDConsumer> consumer;
 	UUIDCountersDB uuid_counters_db;
 	std::mutex mtx;
 	std::atomic<bool> running{true};
 	std::thread worker{run, this, this->consumer.get()};
 
-	static void run(UUIDCounter *instance, UUIDConsumer *consumer);
+	static void
+	run(UUIDCounter *instance, UUIDConsumer::UUIDConsumer *consumer);
 
 public:
 	/**
 	 *
 	 */
-	UUIDCounter(UUIDConsumer *t_consumer, UUIDCountersDB counters_boostrap)
+	UUIDCounter(UUIDConsumer::UUIDConsumer *t_consumer,
+		    UUIDCountersDB counters_boostrap)
 	    : consumer(t_consumer), uuid_counters_db(counters_boostrap) {
 	}
 

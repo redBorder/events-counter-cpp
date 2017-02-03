@@ -6,7 +6,8 @@
 using namespace std;
 using namespace EventsCounter;
 
-void UUIDCounter::run(UUIDCounter *instance, UUIDConsumer *consumer) {
+void UUIDCounter::run(UUIDCounter *instance,
+		      UUIDConsumer::UUIDConsumer *consumer) {
 	while (instance->running.load()) {
 		Utils::UUIDBytes data = consumer->consume(1000);
 		if (data.empty()) {

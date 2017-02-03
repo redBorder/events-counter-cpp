@@ -19,9 +19,9 @@
 
 #pragma once
 
-#include "../UUIDConsumer/UUIDConsumer.h"
 #include "../UUIDCountersDB/UUIDCountersDB.h"
 #include "../UUIDProducer/UUIDProducer.h"
+#include "../uuid_consumer/uuid_consumer.hpp"
 
 #include <rapidjson/document.h>
 
@@ -40,7 +40,8 @@ class Config {
 public:
   virtual ~Config() {}
 
-  virtual std::unique_ptr<UUIDConsumer> get_counters_consumer() = 0;
+  virtual std::unique_ptr<UUIDConsumer::UUIDConsumer>
+  get_counters_consumer() = 0;
   virtual std::shared_ptr<UUIDProducer> get_counters_producer() = 0;
   /// Get counters interval period
   virtual std::chrono::seconds get_counters_timer_period() = 0;
@@ -70,12 +71,12 @@ public:
 
   class UUIDConsumerFactory {
   public:
-    virtual std::unique_ptr<UUIDConsumer> create() = 0;
+    virtual std::unique_ptr<UUIDConsumer::UUIDConsumer> create() = 0;
     virtual ~UUIDConsumerFactory() {}
   };
 
   static JsonConfig *json_parse(const std::string &json_text);
-  virtual std::unique_ptr<UUIDConsumer> get_counters_consumer() {
+  virtual std::unique_ptr<UUIDConsumer::UUIDConsumer> get_counters_consumer() {
     return this->m_counters.consumer_factory->create();
   }
 

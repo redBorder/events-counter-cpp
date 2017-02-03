@@ -19,8 +19,8 @@
 
 #include "TestUtils.h"
 
-#include "../src/UUIDConsumer/UUIDConsumerKafka.h"
 #include "../src/UUIDCountersDB/UUIDCountersDB.h"
+#include "../src/uuid_consumer/kafka_uuid_consumer.hpp"
 
 #include <gtest/gtest.h>
 
@@ -32,6 +32,7 @@ namespace {
 
 using namespace std;
 using namespace EventsCounter;
+using namespace EventsCounter::UUIDConsumer;
 using namespace EventsCounter::Utils;
 using namespace EventsCounter::TestUtils;
 

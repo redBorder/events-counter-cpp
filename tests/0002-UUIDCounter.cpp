@@ -19,9 +19,9 @@
 
 #include "TestUtils.h"
 
-#include "UUIDConsumer/UUIDConsumerKafka.h"
-#include "UUIDCounter/UUIDCounter.h"
-#include "config/config.hpp"
+#include "../src/UUIDCounter/UUIDCounter.h"
+#include "../src/config/config.hpp"
+#include "../src/uuid_consumer/kafka_uuid_consumer.hpp"
 
 #include <gtest/gtest.h>
 #include <librdkafka/rdkafkacpp.h>
@@ -112,7 +112,7 @@ public:
 					    write_topic,
 					    json_uuid_key,
 					    vector<string>{uuid})));
-		unique_ptr<UUIDConsumer> uuid_consumer =
+		unique_ptr<UUIDConsumer::UUIDConsumer> uuid_consumer =
 				config->get_counters_consumer();
 		EventsCounter::UUIDCountersDB::counters_t aux_counters =
 				uuid_vector_to_map(config->counters_uuids());
