@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include "../utils/uuid_bytes.hpp"
+
 #include <rapidjson/encodings.h>
 #include <rapidjson/writer.h>
 
@@ -69,8 +71,7 @@ private:
   bool add_value(const uint64_t val) { return Base::Uint64(val); }
 
 public:
-  explicit JSONMonitorWritter(const std::string &uuid, const uint64_t bytes,
-                              OutputStream &os,
+  explicit JSONMonitorWritter(Utils::UUIDBytes &uuid_bytes, OutputStream &os,
                               StackAllocator *allocator = nullptr,
                               size_t levelDepth = Base::kDefaultLevelDepth)
       : Base(os, allocator, levelDepth) {
@@ -78,10 +79,11 @@ public:
 
     const std::vector<struct json_child<std::string>> strings {
       {"type", "data"}, {"unit", "bytes"}, {"monitor", "uuid_received"},
-          {"uuid", uuid},
+          {"uuid", uuid_bytes.get_uuid()},
     };
     const std::vector<struct json_child<uint64_t>> numbers {
-      {"timestamp", current_unix_timestamp()}, {"value", bytes},
+      {"timestamp", current_unix_timestamp()},
+          {"value", uuid_bytes.get_bytes()},
     };
 
     dump_vars(strings);

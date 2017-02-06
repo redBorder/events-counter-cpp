@@ -19,7 +19,9 @@
 
 #include "TestUtils.hpp"
 
-#include "../src/formatters/kafka_json_monitor_formatter.hpp"
+#include "../src/formatters/json_kafka_message.hpp"
+#include "../src/formatters/json_monitor_writter.hpp"
+#include "../src/utils/uuid_bytes.hpp"
 #include "../src/uuid_counters_db/uuid_counters_db.hpp"
 
 #include <gtest/gtest.h>
@@ -51,8 +53,9 @@ TEST_F(KafkaJSONMonitorFormatterTest, produce_monitor_message) {
 
   Utils::UUIDBytes uuid_bytes("00000000-0000-0000-C000-000000000000", 42);
 
-  KafkaJSONMonitorFormatter formatter;
-  unique_ptr<RdKafka::Message> message(formatter.format(uuid_bytes));
+  unique_ptr<JSONKafkaMessage> message(
+      new JSONKafkaMessage(uuid_bytes.get_uuid()));
+  JSONMonitorWritter<>(uuid_bytes, message->string_buffer);
 
   producer->produce(topic.get(), 0, RdKafka::Producer::RK_MSG_COPY,
                     message->payload(), message->len(), message->key(),
