@@ -20,17 +20,13 @@
 #pragma once
 
 #include "../utils/uuid_bytes.hpp"
+#include "json_kafka_message.hpp"
 
 #include <rapidjson/encodings.h>
 #include <rapidjson/writer.h>
 
 #include <string>
 #include <vector>
-
-template <typename T> struct json_child {
-  std::string key;
-  T value;
-};
 
 namespace EventsCounter {
 namespace Formatters {

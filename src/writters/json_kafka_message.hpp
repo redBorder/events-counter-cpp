@@ -25,6 +25,11 @@
 namespace EventsCounter {
 namespace Formatters {
 
+template <typename T> struct json_child {
+  std::string key;
+  T value;
+};
+
 class JSONKafkaMessage : public RdKafka::Message {
 private:
   std::string m_kafka_key;
