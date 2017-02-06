@@ -18,12 +18,16 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "json_kafka_message.hpp"
+#include "json_monitor_writter.hpp"
+#include "kafka_json_monitor_formatter.hpp"
 
+using namespace EventsCounter::Formatters;
 using namespace std;
-using namespace EventsCounter::CounterFormatter;
 
-JSONKafkaMessage::JSONKafkaMessage(string t_kafka_key, int32_t t_partition,
-                                   void *t_opaque,
-                                   RdKafka::MessageTimestamp t_timestamp)
-    : m_kafka_key(t_kafka_key), m_partition(t_partition), m_opaque(t_opaque),
-      m_timestamp(t_timestamp) {}
+unique_ptr<RdKafka::Message>
+KafkaJSONMonitorFormatter::format(Utils::UUIDBytes &uuid_bytes) {
+  unique_ptr<JSONKafkaMessage> ret(new JSONKafkaMessage(uuid_bytes.get_uuid()));
+  JSONMonitorWritter<>(uuid_bytes.get_uuid(), uuid_bytes.get_bytes(),
+                       ret->string_buffer);
+  return std::move(ret);
+}

@@ -19,20 +19,22 @@
 
 #pragma once
 
+#include "../utils/uuid_bytes.hpp"
+
 #include <librdkafka/rdkafkacpp.h>
 
 #include <memory>
-#include <vector>
 
 namespace EventsCounter {
-namespace CounterFormatter {
+namespace Formatters {
 
-class KafkaJSONCounterFormatter {
+class KafkaJSONMonitorFormatter {
+
 public:
-  ~KafkaJSONCounterFormatter() = default;
-
-  std::unique_ptr<RdKafka::Message> format(const std::string &uuid,
-                                           const uint64_t bytes);
+  /**
+   * Creates a RdKafka::Message formatted using the JSON rb_monitor format
+   */
+  std::unique_ptr<RdKafka::Message> format(Utils::UUIDBytes &bytes);
 };
 };
 };

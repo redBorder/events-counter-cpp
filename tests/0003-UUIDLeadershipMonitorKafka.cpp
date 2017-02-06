@@ -17,7 +17,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "TestUtils.h"
+#include "TestUtils.hpp"
 
 #include "../src/uuid_counters_monitor/kafka_leadership_monitor.hpp"
 

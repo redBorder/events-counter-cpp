@@ -23,7 +23,7 @@
 #include <rapidjson/stringbuffer.h>
 
 namespace EventsCounter {
-namespace CounterFormatter {
+namespace Formatters {
 
 class JSONKafkaMessage : public RdKafka::Message {
 private:
