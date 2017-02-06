@@ -31,14 +31,14 @@ template <typename T> struct json_child {
 };
 
 namespace EventsCounter {
-namespace CounterFormatter {
+namespace Formatters {
 
 template <typename OutputStream = rapidjson::StringBuffer,
           typename SourceEncoding = rapidjson::UTF8<>,
           typename TargetEncoding = rapidjson::UTF8<>,
           typename StackAllocator = rapidjson::CrtAllocator,
           unsigned writeFlags = rapidjson::kWriteDefaultFlags>
-class JSONCountersWriter
+class JSONMonitorWritter
     : public rapidjson::Writer<OutputStream, SourceEncoding, TargetEncoding,
                                StackAllocator, writeFlags> {
 private:
@@ -69,7 +69,7 @@ private:
   bool add_value(const uint64_t val) { return Base::Uint64(val); }
 
 public:
-  explicit JSONCountersWriter(const std::string &uuid, const uint64_t bytes,
+  explicit JSONMonitorWritter(const std::string &uuid, const uint64_t bytes,
                               OutputStream &os,
                               StackAllocator *allocator = nullptr,
                               size_t levelDepth = Base::kDefaultLevelDepth)

@@ -31,45 +31,56 @@ namespace TestUtils {
 /// Create a random pattern over a given name
 static char *rand_tmpl(char *tmpl) __attribute__((unused));
 static char *rand_tmpl(char *tmpl) {
-	int fd = mkstemp(tmpl);
-	close(fd);
-	remove(tmpl);
+  int fd = mkstemp(tmpl);
+  close(fd);
+  remove(tmpl);
 
-	return tmpl;
+  return tmpl;
 }
 
 /// Create standard consumer config based on given brokers and group id
 std::unique_ptr<RdKafka::Conf>
 create_test_kafka_consumer_config(const std::string &brokers,
-				  const std::string &group_id);
+                                  const std::string &group_id);
 
 /// Create tests random topic
 static std::string random_topic() __attribute__((unused));
 static std::string random_topic() {
-	char tmp_topic_tmpl[] = "rb_flow_XXXXXX";
-	rand_tmpl(tmp_topic_tmpl);
-	const std::string topic_str = tmp_topic_tmpl;
-	const std::string group_id = std::string("group_") + tmp_topic_tmpl;
+  char tmp_topic_tmpl[] = "rb_flow_XXXXXX";
+  rand_tmpl(tmp_topic_tmpl);
+  const std::string topic_str = tmp_topic_tmpl;
+  const std::string group_id = std::string("group_") + tmp_topic_tmpl;
 
-	return tmp_topic_tmpl;
+  return tmp_topic_tmpl;
 }
 
 /// Produce a single kafka message
-void UUIDProduce(const std::string &uuid_key,
-		 const std::string &uuid,
-		 const std::string &topic_str);
+void UUIDProduce(const std::string &uuid_key, const std::string &uuid,
+                 const std::string &topic_str);
 
 /// Wait some time to kafka destruction
 static void wait_kafka_destroyed(void) __attribute__((unused));
 static void wait_kafka_destroyed(void) {
-	for (int i = 0; i < 10; ++i) {
-		static const int timeout_ms = 100;
-		const int destroy_rc = RdKafka::wait_destroyed(timeout_ms);
-		if (0 == destroy_rc) {
-			break;
-		}
-	}
+  for (int i = 0; i < 10; ++i) {
+    static const int timeout_ms = 100;
+    const int destroy_rc = RdKafka::wait_destroyed(timeout_ms);
+    if (0 == destroy_rc) {
+      break;
+    }
+  }
 }
+
+std::unique_ptr<RdKafka::KafkaConsumer>
+bootstrap_test_kafka_consumer(const std::string &brokers,
+                              const std::string &group_id,
+                              const std::string &topic);
+
+std::unique_ptr<RdKafka::Producer>
+bootstrap_test_kafka_producer(const std::string &brokers);
+
+std::unique_ptr<RdKafka::Topic>
+bootstrap_test_kafka_topic(std::unique_ptr<RdKafka::Producer> &producer,
+                           const std::string &topic_str);
 
 }; // TestUtils namespace
 }; // EventsCounter namespace
