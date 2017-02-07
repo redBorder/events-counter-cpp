@@ -32,7 +32,7 @@ typedef enum {
 } ErrorCode;
 
 namespace EventsCounter {
-namespace MonitorProducer {
+namespace Producers {
 
 class MonitorProducer {
 public:

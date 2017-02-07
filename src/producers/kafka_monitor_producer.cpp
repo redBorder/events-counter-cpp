@@ -22,7 +22,7 @@
 #include <chrono>
 #include <iostream>
 
-using namespace EventsCounter::MonitorProducer;
+using namespace EventsCounter::Producers;
 using namespace std;
 using namespace std::chrono;
 

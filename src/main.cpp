@@ -18,6 +18,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "config/config.hpp"
+#include "producers/kafka_json_counter_producer.hpp"
+#include "uuid_consumer/kafka_uuid_consumer.hpp"
 #include "uuid_counter/uuid_counter.hpp"
 
 #include <chrono>
@@ -139,37 +141,49 @@ int main(int argc, char **argv) {
   }
 
   unique_ptr<Config> config = parse_json_config_file(config_path);
+  if (config.get() == nullptr) {
+    return 1;
+  }
+
   UUIDCountersDB::UUIDCountersDB::counters_t aux_counters =
       make_uuid_counters_boostrap_db(config->counters_uuids());
   UUIDCountersDB::UUIDCountersDB boostrap_uuid_db(aux_counters);
-  std::shared_ptr<MonitorProducer::MonitorProducer> producer =
+  std::shared_ptr<Producers::KafkaJSONCounterProducer> producer =
       config->get_counters_producer();
 
   /// @TODO UUID counter should accept consumer in unique_ptr<> reference
   /// to reference
-  UUIDCounter::UUIDCounter counter(config->get_counters_consumer().release(),
-                                   boostrap_uuid_db);
-  for (;;) {
-    const chrono::seconds ticks_period = config->get_counters_timer_period();
-    const chrono::seconds ticks_offset = config->get_counters_timer_offset();
+  try {
+    unique_ptr<UUIDConsumer::UUIDConsumer> consumer(
+        config->get_counters_consumer());
+    UUIDCounter::UUIDCounter counter(consumer.release(), boostrap_uuid_db);
 
-    chrono::seconds now = chrono::seconds(std::time(NULL));
-    const chrono::seconds next_counters_tick =
-        next_tick(ticks_period, ticks_offset, now);
+    for (;;) {
+      const chrono::seconds ticks_period = config->get_counters_timer_period();
+      const chrono::seconds ticks_offset = config->get_counters_timer_offset();
 
-    // Do idle tasks until I need something
-    while (now < next_counters_tick) {
-      this_thread::sleep_for(next_counters_tick - now);
-      now = chrono::seconds(std::time(NULL));
+      chrono::seconds now = chrono::seconds(std::time(NULL));
+      const chrono::seconds next_counters_tick =
+          next_tick(ticks_period, ticks_offset, now);
+
+      // Do idle tasks until I need something
+      while (now < next_counters_tick) {
+        this_thread::sleep_for(next_counters_tick - now);
+        now = chrono::seconds(std::time(NULL));
+      }
+
+      // Tick! produce UUID messages and clear counter
+      counter.swap_counters(aux_counters);
+      for (auto &t_counter : aux_counters) {
+
+        producer->produce(Utils::UUIDBytes(t_counter.first, t_counter.second),
+                          next_counters_tick);
+        t_counter.second = 0;
+      }
     }
-
-    // Tick! produce UUID messages and clear counter
-    counter.swap_counters(aux_counters);
-    for (auto &t_counter : aux_counters) {
-      producer->produce(Utils::UUIDBytes(t_counter.first, t_counter.second),
-                        next_counters_tick);
-      t_counter.second = 0;
-    }
+  } catch (const UUIDConsumer::CreateConsumerException &e) {
+    cerr << "UUIDConsumer Exception: " << e.what() << endl;
   }
+
   return 0;
 }

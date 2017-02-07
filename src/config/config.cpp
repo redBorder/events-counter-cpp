@@ -19,7 +19,7 @@
 
 #include "config.hpp"
 
-#include "../monitor_producer/kafka_monitor_producer.hpp"
+#include "../producers/kafka_json_counter_producer.hpp"
 #include "../uuid_consumer/kafka_uuid_consumer.hpp"
 
 #include <rapidjson/document.h>
@@ -28,7 +28,7 @@
 #include <iostream>
 
 using namespace EventsCounter;
-using namespace EventsCounter::MonitorProducer;
+using namespace EventsCounter::Producers;
 using namespace EventsCounter::Configuration;
 using namespace rapidjson;
 using namespace std;
@@ -371,6 +371,6 @@ void JsonConfig::parse_counter_consumer_configuration(
     std::unique_ptr<RdKafka::Topic> rkt(RdKafka::Topic::create(
         rk.get(), counter_write_topic, tconf.get(), errstr));
     fw_config.producer =
-        make_shared<KafkaMonitorProducer>(rk.release(), rkt.release());
+        make_shared<KafkaJSONCounterProducer>(rk.release(), rkt.release());
   }
 }

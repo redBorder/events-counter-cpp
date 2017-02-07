@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "../monitor_producer/monitor_producer.hpp"
+#include "../producers/kafka_json_counter_producer.hpp"
 #include "../uuid_consumer/uuid_consumer.hpp"
 #include "../uuid_counters_db/uuid_counters_db.hpp"
 
@@ -41,7 +41,7 @@ public:
   virtual std::unique_ptr<UUIDConsumer::UUIDConsumer>
   get_counters_consumer() = 0;
 
-  virtual std::shared_ptr<MonitorProducer::MonitorProducer>
+  virtual std::shared_ptr<Producers::KafkaJSONCounterProducer>
   get_counters_producer() = 0;
 
   /// Get counters interval period
@@ -82,7 +82,7 @@ public:
     return this->m_counters.consumer_factory->create();
   }
 
-  virtual std::shared_ptr<MonitorProducer::MonitorProducer>
+  virtual std::shared_ptr<Producers::KafkaJSONCounterProducer>
   get_counters_producer() {
     return this->m_counters.producer;
   }
@@ -109,7 +109,7 @@ private:
     std::unique_ptr<UUIDConsumerFactory> consumer_factory;
 
     /// UUID producer
-    std::shared_ptr<MonitorProducer::MonitorProducer> producer;
+    std::shared_ptr<Producers::KafkaJSONCounterProducer> producer;
 
     /// Time to produce
     std::chrono::seconds period, offset;

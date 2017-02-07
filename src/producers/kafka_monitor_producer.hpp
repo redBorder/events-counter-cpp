@@ -27,7 +27,7 @@
 #include <memory>
 
 namespace EventsCounter {
-namespace MonitorProducer {
+namespace Producers {
 
 class KafkaMonitorProducer : public MonitorProducer {
 public:
