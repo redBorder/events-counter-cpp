@@ -59,16 +59,16 @@ protected:
 class JsonConfig : public Config {
 public:
   class JSONParserException : public std::exception {
+  private:
+    const std::string m_what;
+
   public:
     JSONParserException(const char *t_what) : m_what(t_what) {}
 
     JSONParserException(const std::string &t_what)
         : JSONParserException(t_what.c_str()) {}
 
-    virtual const char *what() const noexcept { return m_what; }
-
-  private:
-    const char *m_what;
+    virtual const char *what() const noexcept { return m_what.c_str(); }
   };
 
   class UUIDConsumerFactory {
