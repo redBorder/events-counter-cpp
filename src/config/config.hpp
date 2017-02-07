@@ -19,8 +19,8 @@
 
 #pragma once
 
+#include "../consumers/kafka_json_uuid_consumer.hpp"
 #include "../producers/kafka_json_counter_producer.hpp"
-#include "../uuid_consumer/uuid_consumer.hpp"
 #include "../uuid_counters_db/uuid_counters_db.hpp"
 
 #include <rapidjson/document.h>
@@ -38,7 +38,7 @@ namespace Configuration {
 class Config {
 public:
   virtual ~Config() {}
-  virtual std::unique_ptr<UUIDConsumer::UUIDConsumer>
+  virtual std::unique_ptr<Consumers::KafkaJSONUUIDConsumer>
   get_counters_consumer() = 0;
 
   virtual std::shared_ptr<Producers::KafkaJSONCounterProducer>
@@ -73,12 +73,13 @@ public:
 
   class UUIDConsumerFactory {
   public:
-    virtual std::unique_ptr<UUIDConsumer::UUIDConsumer> create() = 0;
+    virtual std::unique_ptr<Consumers::KafkaJSONUUIDConsumer> create() = 0;
     virtual ~UUIDConsumerFactory() {}
   };
 
   static JsonConfig *json_parse(const std::string &json_text);
-  virtual std::unique_ptr<UUIDConsumer::UUIDConsumer> get_counters_consumer() {
+  virtual std::unique_ptr<Consumers::KafkaJSONUUIDConsumer>
+  get_counters_consumer() {
     return this->m_counters.consumer_factory->create();
   }
 

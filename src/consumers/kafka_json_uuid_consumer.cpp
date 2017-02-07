@@ -21,12 +21,12 @@
 #include <memory>
 
 #include "../utils/json_zerocopy.hpp"
-#include "kafka_uuid_consumer.hpp"
-#include "uuid_consumer.hpp"
+#include "json_consumer.hpp"
+#include "kafka_json_uuid_consumer.hpp"
 
 using namespace std;
 using namespace EventsCounter;
-using namespace EventsCounter::UUIDConsumer;
+using namespace EventsCounter::Consumers;
 using namespace rapidjson;
 using namespace RdKafka;
 
@@ -51,7 +51,7 @@ Utils::UUIDBytes CounterUUIDJSONKafkaConsumer::get_message_uuid_bytes(
   return Utils::UUIDBytes(uuid_str, message->len());
 }
 
-Utils::UUIDBytes KafkaUUIDConsumer::consume(uint32_t timeout) const {
+Utils::UUIDBytes KafkaJSONUUIDConsumer::consume(uint32_t timeout) const {
   unique_ptr<Message> message(this->kafka_consumer->consume(timeout));
 
   const int err = message->err();
@@ -68,9 +68,9 @@ Utils::UUIDBytes KafkaUUIDConsumer::consume(uint32_t timeout) const {
   return Utils::UUIDBytes();
 }
 
-KafkaUUIDConsumer::KafkaUUIDConsumer(const vector<string> &topics,
-                                     const string t_json_uuid_key,
-                                     RdKafka::Conf *conf)
+KafkaJSONUUIDConsumer::KafkaJSONUUIDConsumer(const vector<string> &topics,
+                                             const string t_json_uuid_key,
+                                             RdKafka::Conf *conf)
     : json_uuid_key(t_json_uuid_key) {
   std::string errstr;
   this->kafka_consumer =
@@ -85,4 +85,6 @@ KafkaUUIDConsumer::KafkaUUIDConsumer(const vector<string> &topics,
   }
 }
 
-KafkaUUIDConsumer::~KafkaUUIDConsumer() { this->kafka_consumer->close(); }
+KafkaJSONUUIDConsumer::~KafkaJSONUUIDConsumer() {
+  this->kafka_consumer->close();
+}

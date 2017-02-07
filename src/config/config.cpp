@@ -19,8 +19,8 @@
 
 #include "config.hpp"
 
+#include "../consumers/kafka_json_uuid_consumer.hpp"
 #include "../producers/kafka_json_counter_producer.hpp"
-#include "../uuid_consumer/kafka_uuid_consumer.hpp"
 
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
@@ -73,7 +73,7 @@ public:
   KafkaUUIDConsumerFactory &operator=(KafkaUUIDConsumerFactory &&) = delete;
   ~KafkaUUIDConsumerFactory() {}
 
-  std::unique_ptr<UUIDConsumer::UUIDConsumer> create() {
+  std::unique_ptr<Consumers::KafkaJSONUUIDConsumer> create() {
     string errstr;
     unique_ptr<RdKafka::Conf> conf(
         RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL)),
@@ -83,8 +83,8 @@ public:
     rdkafka_set_conf_vector(this->m_kafka_consumer_conf, conf.get(), "kafka");
     conf->set("default_topic_conf", tconf.get(), errstr);
 
-    return std::unique_ptr<UUIDConsumer::UUIDConsumer>(
-        new UUIDConsumer::CounterUUIDJSONKafkaConsumer(
+    return std::unique_ptr<Consumers::KafkaJSONUUIDConsumer>(
+        new Consumers::CounterUUIDJSONKafkaConsumer(
             this->m_read_topics, m_json_uuid_key, conf.get()));
   }
 

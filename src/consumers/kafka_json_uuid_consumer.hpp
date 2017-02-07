@@ -20,16 +20,16 @@
 #pragma once
 
 #include "../utils/uuid_bytes.hpp"
-#include "uuid_consumer.hpp"
+#include "json_consumer.hpp"
 
-#include "uuid_consumer.hpp"
+#include "json_consumer.hpp"
 
 #include <librdkafka/rdkafkacpp.h>
 
 #include <memory>
 
 namespace EventsCounter {
-namespace UUIDConsumer {
+namespace Consumers {
 
 class UUIDConsumerKafkaException : public std::exception {
 private:
@@ -57,7 +57,7 @@ public:
 /**
  * Class for consume and parse JSON messages from Kafka
  */
-class KafkaUUIDConsumer : public UUIDConsumer {
+class KafkaJSONUUIDConsumer : public JSONConsumer {
 private:
   std::unique_ptr<RdKafka::KafkaConsumer> kafka_consumer;
   /// UUID field in kafka JSON message
@@ -69,15 +69,15 @@ protected:
                          const RdKafka::Message *message) const = 0;
 
 public:
-  KafkaUUIDConsumer(const std::vector<std::string> &topics,
-                    const std::string json_uuid_key,
-                    RdKafka::Conf *t_kafka_consumer_conf);
+  KafkaJSONUUIDConsumer(const std::vector<std::string> &topics,
+                        const std::string json_uuid_key,
+                        RdKafka::Conf *t_kafka_consumer_conf);
 
-  ~KafkaUUIDConsumer();
+  ~KafkaJSONUUIDConsumer();
 
-  KafkaUUIDConsumer(KafkaUUIDConsumer &&) = delete;
-  KafkaUUIDConsumer &operator=(const KafkaUUIDConsumer &) = delete;
-  KafkaUUIDConsumer &operator=(const KafkaUUIDConsumer &&) = delete;
+  KafkaJSONUUIDConsumer(KafkaJSONUUIDConsumer &&) = delete;
+  KafkaJSONUUIDConsumer &operator=(const KafkaJSONUUIDConsumer &) = delete;
+  KafkaJSONUUIDConsumer &operator=(const KafkaJSONUUIDConsumer &&) = delete;
 
   /**
    * Consume a JSON message from Kafka and returns the "sensor_uuid" value
@@ -90,9 +90,9 @@ public:
 };
 
 /// Transforms counter kafka input message in UUIDBytes format
-class CounterUUIDJSONKafkaConsumer : public KafkaUUIDConsumer {
+class CounterUUIDJSONKafkaConsumer : public KafkaJSONUUIDConsumer {
 public:
-  using KafkaUUIDConsumer::KafkaUUIDConsumer;
+  using KafkaJSONUUIDConsumer::KafkaJSONUUIDConsumer;
 
 private:
   virtual Utils::UUIDBytes

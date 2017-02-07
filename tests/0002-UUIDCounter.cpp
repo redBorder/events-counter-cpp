@@ -20,7 +20,7 @@
 #include "TestUtils.hpp"
 
 #include "../src/config/config.hpp"
-#include "../src/uuid_consumer/kafka_uuid_consumer.hpp"
+#include "../src/consumers/kafka_json_uuid_consumer.hpp"
 #include "../src/uuid_counter/uuid_counter.hpp"
 
 #include <gtest/gtest.h>
@@ -107,7 +107,7 @@ public:
     unique_ptr<Config> config(JsonConfig::json_parse(
         test_config(vector<string>{read_topic}, group_id, write_topic,
                     json_uuid_key, vector<string>{uuid})));
-    unique_ptr<UUIDConsumer::UUIDConsumer> uuid_consumer =
+    unique_ptr<Consumers::KafkaJSONUUIDConsumer> uuid_consumer =
         config->get_counters_consumer();
     UUIDCountersDB::UUIDCountersDB::counters_t aux_counters =
         uuid_vector_to_map(config->counters_uuids());
