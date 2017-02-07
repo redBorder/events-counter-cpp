@@ -84,6 +84,12 @@ static unique_ptr<Config> parse_json_config_file(const string &path) {
 static chrono::seconds next_tick(const chrono::seconds ticks_period,
                                  const chrono::seconds ticks_offset,
                                  const chrono::seconds now) {
+
+  if (ticks_period == chrono::seconds(0)) {
+    cerr << "Period can't be zero" << endl;
+    exit(1);
+  }
+
   // Number of ticks since epoch
   const uint64_t n_ticks = now / ticks_period;
 
