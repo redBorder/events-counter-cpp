@@ -67,7 +67,8 @@ private:
   bool add_value(const uint64_t val) { return Base::Uint64(val); }
 
 public:
-  explicit JSONCounterWritter(Utils::UUIDBytes &uuid_bytes, OutputStream &os,
+  explicit JSONCounterWritter(const Utils::UUIDBytes &uuid_bytes,
+                              OutputStream &os,
                               StackAllocator *allocator = nullptr,
                               size_t levelDepth = Base::kDefaultLevelDepth)
       : Base(os, allocator, levelDepth) {
