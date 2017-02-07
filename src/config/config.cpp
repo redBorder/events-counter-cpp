@@ -239,9 +239,11 @@ static void parse_kafka_forwarder_properties(
     KafkaUUIDConsumerFactory::kafka_conf_list &consumer_tconf,
     KafkaUUIDConsumerFactory::kafka_conf_list &producer_conf,
     KafkaUUIDConsumerFactory::kafka_conf_list &producer_tconf) {
+
   struct to_parse {
     const char *key;
-    KafkaUUIDConsumerFactory::kafka_conf_list &rk_conf, &rkt_conf;
+    KafkaUUIDConsumerFactory::kafka_conf_list &rk_conf;
+    KafkaUUIDConsumerFactory::kafka_conf_list &rkt_conf;
   };
 
   static const std::vector<struct to_parse> to_parse{
@@ -308,9 +310,11 @@ JsonConfig *JsonConfig::json_parse(const std::string &text_config) {
 void JsonConfig::parse_counter_consumer_configuration(
     const Value::ConstObject &json_config,
     struct JsonConfig::forwarder_config &fw_config) {
-  KafkaUUIDConsumerFactory::kafka_conf_list counter_consumer_rk_conf_v,
-      counter_consumer_rkt_conf_v, counter_producer_rk_conf_v,
-      counter_producer_rkt_conf_v;
+
+  KafkaUUIDConsumerFactory::kafka_conf_list counter_consumer_rk_conf_v;
+  KafkaUUIDConsumerFactory::kafka_conf_list counter_consumer_rkt_conf_v;
+  KafkaUUIDConsumerFactory::kafka_conf_list counter_producer_rk_conf_v;
+  KafkaUUIDConsumerFactory::kafka_conf_list counter_producer_rkt_conf_v;
 
   {
     // Parse consumer & producer properties
