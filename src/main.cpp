@@ -176,9 +176,11 @@ int main(int argc, char **argv) {
       counter.swap_counters(aux_counters);
       for (auto &t_counter : aux_counters) {
 
-        producer->produce(Utils::UUIDBytes(t_counter.first, t_counter.second),
-                          next_counters_tick);
-        t_counter.second = 0;
+        if (t_counter.second > 0) {
+          producer->produce(Utils::UUIDBytes(t_counter.first, t_counter.second),
+                            next_counters_tick);
+          t_counter.second = 0;
+        }
       }
     }
   } catch (const UUIDConsumer::CreateConsumerException &e) {
