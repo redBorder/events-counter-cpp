@@ -19,16 +19,14 @@
 
 #pragma once
 
+#include "../utils/uuid_bytes.hpp"
+#include "json_kafka_message.hpp"
+
 #include <rapidjson/encodings.h>
 #include <rapidjson/writer.h>
 
 #include <string>
 #include <vector>
-
-template <typename T> struct json_child {
-  std::string key;
-  T value;
-};
 
 namespace EventsCounter {
 namespace Formatters {
@@ -38,7 +36,7 @@ template <typename OutputStream = rapidjson::StringBuffer,
           typename TargetEncoding = rapidjson::UTF8<>,
           typename StackAllocator = rapidjson::CrtAllocator,
           unsigned writeFlags = rapidjson::kWriteDefaultFlags>
-class JSONMonitorWritter
+class JSONCounterWritter
     : public rapidjson::Writer<OutputStream, SourceEncoding, TargetEncoding,
                                StackAllocator, writeFlags> {
 private:
@@ -69,19 +67,18 @@ private:
   bool add_value(const uint64_t val) { return Base::Uint64(val); }
 
 public:
-  explicit JSONMonitorWritter(const std::string &uuid, const uint64_t bytes,
-                              OutputStream &os,
+  explicit JSONCounterWritter(Utils::UUIDBytes &uuid_bytes, OutputStream &os,
                               StackAllocator *allocator = nullptr,
                               size_t levelDepth = Base::kDefaultLevelDepth)
       : Base(os, allocator, levelDepth) {
     Base::StartObject();
 
     const std::vector<struct json_child<std::string>> strings {
-      {"type", "data"}, {"unit", "bytes"}, {"monitor", "uuid_received"},
-          {"uuid", uuid},
+      {"unit", "bytes"}, {"uuid", uuid_bytes.get_uuid()},
     };
     const std::vector<struct json_child<uint64_t>> numbers {
-      {"timestamp", current_unix_timestamp()}, {"value", bytes},
+      {"timestamp", current_unix_timestamp()},
+          {"value", uuid_bytes.get_bytes()},
     };
 
     dump_vars(strings);
