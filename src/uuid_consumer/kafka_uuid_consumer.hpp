@@ -39,9 +39,7 @@ protected:
   UUIDConsumerKafkaException(std::string t_errstr) : errstr(t_errstr) {}
 
 public:
-  virtual const char *what() const throw() {
-    return ("LeadershipMonitorKafkaException: " + errstr).c_str();
-  }
+  virtual const char *what() const throw() { return errstr.c_str(); }
 };
 
 class CreateConsumerException : public UUIDConsumerKafkaException {
