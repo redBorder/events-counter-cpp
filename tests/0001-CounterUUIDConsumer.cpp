@@ -19,7 +19,7 @@
 
 #include "TestUtils.hpp"
 
-#include "../src/uuid_consumer/kafka_uuid_consumer.hpp"
+#include "../src/consumers/kafka_json_uuid_consumer.hpp"
 #include "../src/uuid_counters_db/uuid_counters_db.hpp"
 
 #include <gtest/gtest.h>
@@ -32,7 +32,7 @@ namespace {
 
 using namespace std;
 using namespace EventsCounter;
-using namespace EventsCounter::UUIDConsumer;
+using namespace EventsCounter::Consumers;
 using namespace EventsCounter::Utils;
 using namespace EventsCounter::TestUtils;
 

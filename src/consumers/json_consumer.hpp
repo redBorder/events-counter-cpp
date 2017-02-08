@@ -22,22 +22,24 @@
 #include "../utils/uuid_bytes.hpp"
 
 namespace EventsCounter {
-namespace UUIDConsumer {
+namespace Consumers {
 
-class UUIDConsumer {
+/**
+ * Interface to consume JSON messages with keys "uuid" and "values".
+ */
+class JSONConsumer {
 public:
-  /**
-   *
-   */
-  virtual ~UUIDConsumer(){};
+  virtual ~JSONConsumer() = default;
 
   /**
-   * Consume a message and returns the UUID of the sensor who sents the
-   * message and the number of bytes of the message.
-   *
-   * @param  timeout Max time to wait for a message in milliseconds.
-   * @return         Pair with UUID and number of bytes of the message.
-   */
+  * Consume a message and returns the UUID of the sensor who sents the
+  * message and the number of bytes of the message. Unlike UUIDCounsumer,
+  * does not count the number of bytes of the actual message, instead, the
+  * consumer will parse the "bytes" field of the message.
+  *
+  * @param  timeout Max time to wait for a message in milliseconds.
+  * @return         Pair with UUID and number of bytes of the message.
+  */
   virtual Utils::UUIDBytes consume(uint32_t timeout) const = 0;
 };
 };

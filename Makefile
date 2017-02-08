@@ -9,7 +9,7 @@ SRCS= src/main.cpp \
 	version.cpp \
 	src/utils/json_zerocopy.cpp \
 	src/config/config.cpp \
-	src/uuid_consumer/kafka_uuid_consumer.cpp \
+	src/consumers/kafka_json_uuid_consumer.cpp \
 	src/uuid_counter/uuid_counter.cpp \
 	src/uuid_counters_db/uuid_counters_db.cpp \
 	src/writters/json_kafka_message.cpp \

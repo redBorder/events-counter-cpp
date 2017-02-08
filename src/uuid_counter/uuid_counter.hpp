@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "../uuid_consumer/uuid_consumer.hpp"
+#include "../consumers/kafka_json_uuid_consumer.hpp"
 #include "../uuid_counters_db/uuid_counters_db.hpp"
 
 #include <atomic>
@@ -32,16 +32,17 @@ namespace UUIDCounter {
 
 class UUIDCounter {
 private:
-  std::unique_ptr<UUIDConsumer::UUIDConsumer> consumer;
+  std::unique_ptr<Consumers::KafkaJSONUUIDConsumer> consumer;
   UUIDCountersDB::UUIDCountersDB uuid_counters_db;
   std::mutex mtx;
   std::atomic<bool> running{true};
   std::thread worker{run, this, this->consumer.get()};
 
-  static void run(UUIDCounter *instance, UUIDConsumer::UUIDConsumer *consumer);
+  static void run(UUIDCounter *instance,
+                  Consumers::KafkaJSONUUIDConsumer *consumer);
 
 public:
-  UUIDCounter(UUIDConsumer::UUIDConsumer *t_consumer,
+  UUIDCounter(Consumers::KafkaJSONUUIDConsumer *t_consumer,
               UUIDCountersDB::UUIDCountersDB counters_boostrap)
       : consumer(t_consumer), uuid_counters_db(counters_boostrap) {}
   ~UUIDCounter();

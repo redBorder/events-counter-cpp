@@ -26,7 +26,7 @@ using namespace std;
 using namespace EventsCounter::UUIDCounter;
 
 void UUIDCounter::run(UUIDCounter *instance,
-                      UUIDConsumer::UUIDConsumer *consumer) {
+                      Consumers::KafkaJSONUUIDConsumer *consumer) {
   while (instance->running.load()) {
     Utils::UUIDBytes data = consumer->consume(1000);
     if (data.empty()) {

@@ -18,8 +18,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "config/config.hpp"
+#include "consumers/kafka_json_uuid_consumer.hpp"
 #include "producers/kafka_json_counter_producer.hpp"
-#include "uuid_consumer/kafka_uuid_consumer.hpp"
 #include "uuid_counter/uuid_counter.hpp"
 
 #include <chrono>
@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
   /// @TODO UUID counter should accept consumer in unique_ptr<> reference
   /// to reference
   try {
-    unique_ptr<UUIDConsumer::UUIDConsumer> consumer(
+    unique_ptr<Consumers::KafkaJSONUUIDConsumer> consumer(
         config->get_counters_consumer());
     UUIDCounter::UUIDCounter counter(consumer.release(), boostrap_uuid_db);
 
@@ -183,7 +183,7 @@ int main(int argc, char **argv) {
         }
       }
     }
-  } catch (const UUIDConsumer::CreateConsumerException &e) {
+  } catch (const Consumers::CreateConsumerException &e) {
     cerr << "UUIDConsumer Exception: " << e.what() << endl;
   }
 
