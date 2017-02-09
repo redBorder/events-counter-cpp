@@ -17,38 +17,29 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#pragma once
-
-#include "../consumers/kafka_json_uuid_consumer.hpp"
-#include "../producers/kafka_json_counter_producer.hpp"
-#include "../uuid_counters_db/uuid_counters_db.hpp"
-
-#include <rapidjson/document.h>
-
-#include <chrono>
-#include <memory>
-#include <vector>
+#include "../config/json_config.hpp"
+#include "kafka_json_uuid_consumer.hpp"
 
 namespace EventsCounter {
-namespace Configuration {
+namespace Consumers {
 
-class Config {
+class KafkaUUIDConsumerFactory {
+private:
+  std::vector<std::string> m_read_topics;
+  std::string m_json_uuid_key;
+  Configuration::kafka_conf_list m_kafka_consumer_conf;
+  Configuration::kafka_conf_list m_kafka_consumer_tconf;
+
 public:
-  virtual ~Config() = default;
+  KafkaUUIDConsumerFactory(
+      std::vector<std::string> t_read_topics, std::string t_json_uuid_key,
+      Configuration::kafka_conf_list t_kafka_consumer_conf,
+      Configuration::kafka_conf_list t_kafka_consumer_tconf);
+  KafkaUUIDConsumerFactory(KafkaUUIDConsumerFactory &&) = delete;
+  KafkaUUIDConsumerFactory &operator=(KafkaUUIDConsumerFactory &) = delete;
+  KafkaUUIDConsumerFactory &operator=(KafkaUUIDConsumerFactory &&) = delete;
 
-  // virtual std::unique_ptr<Consumers::KafkaJSONUUIDConsumer>
-  // get_counters_consumer() = 0;
-
-  virtual std::shared_ptr<Producers::KafkaJSONCounterProducer>
-  get_counters_producer() = 0;
-
-  /// Get counters interval period
-  virtual std::chrono::seconds get_counters_timer_period() = 0;
-
-  /// Get counters interval offset to launch
-  virtual std::chrono::seconds get_counters_timer_offset() = 0;
-
-  virtual const std::vector<std::string> &counters_uuids() = 0;
+  std::unique_ptr<Consumers::KafkaJSONUUIDConsumer> create();
 };
 };
 };

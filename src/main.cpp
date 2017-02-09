@@ -18,7 +18,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "config/config.hpp"
+#include "config/json_config.hpp"
+#include "consumers/kafka_json_counter_consumer.hpp"
 #include "consumers/kafka_json_uuid_consumer.hpp"
+#include "consumers/kafka_json_uuid_consumer_factory.hpp"
 #include "producers/kafka_json_counter_producer.hpp"
 #include "uuid_counter/uuid_counter.hpp"
 
@@ -29,8 +32,10 @@
 #include <string>
 
 using namespace std;
+using namespace std::chrono;
 using namespace EventsCounter;
 using namespace EventsCounter::Configuration;
+using namespace EventsCounter::Consumers;
 
 static const struct option long_options[] = {
     {"help", no_argument, nullptr, 'h'},
@@ -42,7 +47,7 @@ static const struct option long_options[] = {
 static void usage() {}
 
 /// Return input file stream size
-static ssize_t ifstream_binary_size(std::ifstream &is) {
+static ssize_t ifstream_binary_size(ifstream &is) {
   const int original_pos = is.tellg();
 
   is.seekg(0, is.beg);
@@ -56,12 +61,12 @@ static ssize_t ifstream_binary_size(std::ifstream &is) {
   return last_pos - first_pos;
 }
 
-static unique_ptr<Config> parse_json_config_file(const string &path) {
-  std::ifstream file{};
-  file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+static unique_ptr<JsonConfig> parse_json_config_file(const string &path) {
+  ifstream file{};
+  file.exceptions(ifstream::failbit | ifstream::badbit);
 
   try {
-    file.open(path, std::ifstream::binary);
+    file.open(path, ifstream::binary);
     const ssize_t file_size = ifstream_binary_size(file);
     if (file_size <= 0) {
       cerr << "Invalid length " << file_size << "of config file " << path << '.'
@@ -71,8 +76,8 @@ static unique_ptr<Config> parse_json_config_file(const string &path) {
     char config_text[file_size + 1];
     file.read(config_text, file_size);
     config_text[file_size] = '\0';
-    return unique_ptr<Config>(JsonConfig::json_parse(config_text));
-  } catch (const JsonConfig::JSONParserException &e) {
+    return unique_ptr<JsonConfig>(new JsonConfig(config_text));
+  } catch (const JSONParserException &e) {
     cerr << "Couldn't parse JSON config in " << path << ": " << e.what()
          << endl;
   } catch (const ifstream::failure &e) {
@@ -83,11 +88,10 @@ static unique_ptr<Config> parse_json_config_file(const string &path) {
 }
 
 // Using all duration, not time point. Make the code simpler.
-static chrono::seconds next_tick(const chrono::seconds ticks_period,
-                                 const chrono::seconds ticks_offset,
-                                 const chrono::seconds now) {
+static seconds next_tick(const seconds ticks_period, const seconds ticks_offset,
+                         const seconds now) {
 
-  if (ticks_period == chrono::seconds(0)) {
+  if (ticks_period == seconds(0)) {
     cerr << "Period can't be zero" << endl;
     exit(1);
   }
@@ -140,10 +144,15 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  unique_ptr<Config> config = parse_json_config_file(config_path);
+  unique_ptr<JsonConfig> config = parse_json_config_file(config_path);
   if (config.get() == nullptr) {
     return 1;
   }
+
+  unique_ptr<KafkaUUIDConsumerFactory> factory(new KafkaUUIDConsumerFactory(
+      config->get_counter_read_topics(), config->get_counter_uuid_key(),
+      config->get_counter_consumer_rk_conf_v(),
+      config->get_counter_consumer_rkt_conf_v()));
 
   UUIDCountersDB::UUIDCountersDB::counters_t aux_counters =
       make_uuid_counters_boostrap_db(config->counters_uuids());
@@ -154,8 +163,7 @@ int main(int argc, char **argv) {
   /// @TODO UUID counter should accept consumer in unique_ptr<> reference
   /// to reference
   try {
-    unique_ptr<Consumers::KafkaJSONUUIDConsumer> consumer(
-        config->get_counters_consumer());
+    unique_ptr<KafkaJSONUUIDConsumer> consumer(factory->create());
     UUIDCounter::UUIDCounter counter(consumer.release(), boostrap_uuid_db);
 
     for (;;) {

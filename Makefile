@@ -8,8 +8,9 @@ SRCS_SFLOW_$(WITH_SFLOW) += sflow_collect.c
 SRCS= src/main.cpp \
 	version.cpp \
 	src/utils/json_zerocopy.cpp \
-	src/config/config.cpp \
+	src/config/json_config.cpp \
 	src/consumers/kafka_json_uuid_consumer.cpp \
+	src/consumers/kafka_json_uuid_consumer_factory.cpp \
 	src/uuid_counter/uuid_counter.cpp \
 	src/uuid_counters_db/uuid_counters_db.cpp \
 	src/writters/json_kafka_message.cpp \

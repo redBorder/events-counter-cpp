@@ -17,7 +17,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "json_consumer.hpp"
+#pragma once
+
+#include "../utils/uuid_bytes.hpp"
 
 #include <librdkafka/rdkafkacpp.h>
 
@@ -26,9 +28,12 @@
 namespace EventsCounter {
 namespace Consumers {
 
-class KafkaJSONCounterConsumer : public JSONConsumer {
+class KafkaJSONCounterConsumer {
 private:
   std::unique_ptr<RdKafka::KafkaConsumer> kafka_consumer;
+
+  Utils::UUIDBytes
+  get_message_uuid_bytes(std::unique_ptr<RdKafka::Message> &message) const;
 
 public:
   KafkaJSONCounterConsumer(const std::string &topic, RdKafka::Conf *conf);

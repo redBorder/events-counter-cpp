@@ -17,30 +17,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#pragma once
+#include <librdkafka/rdkafkacpp.h>
 
-#include "../utils/uuid_bytes.hpp"
+#include <iostream>
 
 namespace EventsCounter {
-namespace Consumers {
+namespace Configuration {
 
-/**
- * Interface to consume JSON messages with keys "uuid" and "values".
- */
-class JSONConsumer {
+class EventCounterCb : public RdKafka::DeliveryReportCb {
 public:
-  virtual ~JSONConsumer() = default;
-
-  /**
-  * Consume a message and returns the UUID of the sensor who sents the
-  * message and the number of bytes of the message. Unlike UUIDCounsumer,
-  * does not count the number of bytes of the actual message, instead, the
-  * consumer will parse the "bytes" field of the message.
-  *
-  * @param  timeout Max time to wait for a message in milliseconds.
-  * @return         Pair with UUID and number of bytes of the message.
-  */
-  virtual Utils::UUIDBytes consume(uint32_t timeout) const = 0;
+  virtual void dr_cb(RdKafka::Message &message) {
+    if (message.err() != RdKafka::ERR_NO_ERROR) {
+      std::cerr << "Couldn't deliver [";
+      std::cerr.write(static_cast<char *>(message.payload()), message.len())
+          << "] to topic [" << message.topic_name() << ':'
+          << message.partition() << "]. Error: " << message.errstr()
+          << std::endl;
+    }
+  }
 };
+
+static EventCounterCb events_counter_cb;
 };
 };

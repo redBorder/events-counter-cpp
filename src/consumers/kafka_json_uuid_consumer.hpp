@@ -20,9 +20,7 @@
 #pragma once
 
 #include "../utils/uuid_bytes.hpp"
-#include "json_consumer.hpp"
-
-#include "json_consumer.hpp"
+#include "kafka_json_consumer_exceptions.hpp"
 
 #include <librdkafka/rdkafkacpp.h>
 
@@ -31,42 +29,17 @@
 namespace EventsCounter {
 namespace Consumers {
 
-class UUIDConsumerKafkaException : public std::exception {
-private:
-  const std::string errstr;
-
-protected:
-  UUIDConsumerKafkaException(std::string t_errstr) : errstr(t_errstr) {}
-
-public:
-  virtual const char *what() const throw() { return errstr.c_str(); }
-};
-
-class CreateConsumerException : public UUIDConsumerKafkaException {
-public:
-  CreateConsumerException(std::string t_errstr)
-      : UUIDConsumerKafkaException(t_errstr) {}
-};
-
-class SubscribeException : public UUIDConsumerKafkaException {
-public:
-  SubscribeException(std::string t_errstr)
-      : UUIDConsumerKafkaException(t_errstr) {}
-};
-
 /**
  * Class for consume and parse JSON messages from Kafka
  */
-class KafkaJSONUUIDConsumer : public JSONConsumer {
+class KafkaJSONUUIDConsumer {
 private:
   std::unique_ptr<RdKafka::KafkaConsumer> kafka_consumer;
-  /// UUID field in kafka JSON message
   std::string json_uuid_key;
 
-protected:
-  virtual Utils::UUIDBytes
+  Utils::UUIDBytes
   get_message_uuid_bytes(const std::string &json_uuid_key,
-                         const RdKafka::Message *message) const = 0;
+                         const RdKafka::Message *message) const;
 
 public:
   KafkaJSONUUIDConsumer(const std::vector<std::string> &topics,
@@ -87,17 +60,6 @@ public:
    * @return         Pair with UUID and number of bytes of the message.
    */
   Utils::UUIDBytes consume(uint32_t timeout_ms) const;
-};
-
-/// Transforms counter kafka input message in UUIDBytes format
-class CounterUUIDJSONKafkaConsumer : public KafkaJSONUUIDConsumer {
-public:
-  using KafkaJSONUUIDConsumer::KafkaJSONUUIDConsumer;
-
-private:
-  virtual Utils::UUIDBytes
-  get_message_uuid_bytes(const std::string &json_uuid_key,
-                         const RdKafka::Message *message) const;
 };
 };
 };

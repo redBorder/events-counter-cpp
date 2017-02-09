@@ -24,10 +24,6 @@
 
 #include <gtest/gtest.h>
 
-// #include <cstdlib>
-// #include <memory>
-// #include <string>
-
 namespace {
 
 using namespace std;
@@ -46,8 +42,8 @@ TEST_F(UUIDConsumerTest, consumer_uuid) {
 
     unique_ptr<RdKafka::Conf> kafka_conf =
         create_test_kafka_consumer_config("kafka:9092", group_id);
-    CounterUUIDJSONKafkaConsumer consumer(vector<string>{topic_str},
-                                          json_uuid_key, kafka_conf.get());
+    KafkaJSONUUIDConsumer consumer(vector<string>{topic_str}, json_uuid_key,
+                                   kafka_conf.get());
 
     UUIDProduce(json_uuid_key, "123456", topic_str);
     while (true) {

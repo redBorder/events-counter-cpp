@@ -21,7 +21,6 @@
 #include <memory>
 
 #include "../utils/json_zerocopy.hpp"
-#include "json_consumer.hpp"
 #include "kafka_json_uuid_consumer.hpp"
 
 using namespace std;
@@ -30,8 +29,8 @@ using namespace EventsCounter::Consumers;
 using namespace rapidjson;
 using namespace RdKafka;
 
-/// @TODO improve error messages
-Utils::UUIDBytes CounterUUIDJSONKafkaConsumer::get_message_uuid_bytes(
+/// TODO improve error messages
+Utils::UUIDBytes KafkaJSONUUIDConsumer::get_message_uuid_bytes(
     const std::string &t_json_uuid_key, const RdKafka::Message *message) const {
   Utils::JSON json(static_cast<char *>(message->payload()), message->len());
 

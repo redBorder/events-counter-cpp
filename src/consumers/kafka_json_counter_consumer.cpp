@@ -17,9 +17,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "../utils/json_zerocopy.hpp"
+#include "kafka_json_consumer_exceptions.hpp"
+
 #include "kafka_json_counter_consumer.hpp"
 
+#include <iostream>
+
 using namespace EventsCounter::Consumers;
+using namespace EventsCounter::Utils;
+using namespace rapidjson;
+using namespace RdKafka;
 using namespace std;
 
 KafkaJSONCounterConsumer::KafkaJSONCounterConsumer(const string &topic,
@@ -28,8 +36,55 @@ KafkaJSONCounterConsumer::KafkaJSONCounterConsumer(const string &topic,
   vector<string> topics;
   topics.push_back(topic);
 
-  this->kafka_consumer = unique_ptr<RdKafka::KafkaConsumer>(
-      RdKafka::KafkaConsumer::create(conf, errstr));
+  this->kafka_consumer =
+      unique_ptr<KafkaConsumer>(KafkaConsumer::create(conf, errstr));
+  if (!this->kafka_consumer) {
+    throw CreateConsumerException(errstr);
+  }
 
-  this->kafka_consumer->subscribe(topics);
+  ErrorCode err = this->kafka_consumer->subscribe(topics);
+  if (err) {
+    throw SubscribeException(errstr);
+  }
+}
+
+UUIDBytes KafkaJSONCounterConsumer::consume(uint32_t timeout) const {
+  unique_ptr<Message> message(this->kafka_consumer->consume(timeout));
+
+  const int err = message->err();
+  switch (err) {
+  case ERR_NO_ERROR:
+    return get_message_uuid_bytes(message);
+
+  case ERR__TIMED_OUT:
+  case ERR__PARTITION_EOF:
+  default:
+    break;
+  }
+
+  return Utils::UUIDBytes();
+}
+
+UUIDBytes KafkaJSONCounterConsumer::get_message_uuid_bytes(
+    unique_ptr<Message> &message) const {
+  Utils::JSON json(static_cast<char *>(message->payload()), message->len());
+
+  if (json.HasParseError() || !json.IsObject()) {
+    cerr << "Invalid JSON message" << endl;
+    return Utils::UUIDBytes();
+  }
+
+  if (!json.HasMember("uuid") || !json["uuid"].IsString()) {
+    return Utils::UUIDBytes();
+  }
+  if (!json.HasMember("bytes") || !json["bytes"].IsNumber()) {
+    return Utils::UUIDBytes();
+  }
+
+  Value &uuid = json["uuid"];
+  Value &bytes = json["bytes"];
+  string uuid_str = uuid.GetString();
+  uint64_t bytes_number = bytes.GetUint64();
+
+  return Utils::UUIDBytes(uuid_str, bytes_number);
 }

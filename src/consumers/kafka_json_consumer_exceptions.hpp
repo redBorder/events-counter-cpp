@@ -19,36 +19,30 @@
 
 #pragma once
 
-#include "../consumers/kafka_json_uuid_consumer.hpp"
-#include "../producers/kafka_json_counter_producer.hpp"
-#include "../uuid_counters_db/uuid_counters_db.hpp"
-
-#include <rapidjson/document.h>
-
-#include <chrono>
-#include <memory>
-#include <vector>
-
 namespace EventsCounter {
-namespace Configuration {
+namespace Consumers {
 
-class Config {
+class KafkaJSONConsumerException : public std::exception {
+private:
+  const std::string errstr;
+
+protected:
+  KafkaJSONConsumerException(std::string t_errstr) : errstr(t_errstr) {}
+
 public:
-  virtual ~Config() = default;
+  virtual const char *what() const throw() { return errstr.c_str(); }
+};
 
-  // virtual std::unique_ptr<Consumers::KafkaJSONUUIDConsumer>
-  // get_counters_consumer() = 0;
+class CreateConsumerException : public KafkaJSONConsumerException {
+public:
+  CreateConsumerException(std::string t_errstr)
+      : KafkaJSONConsumerException(t_errstr) {}
+};
 
-  virtual std::shared_ptr<Producers::KafkaJSONCounterProducer>
-  get_counters_producer() = 0;
-
-  /// Get counters interval period
-  virtual std::chrono::seconds get_counters_timer_period() = 0;
-
-  /// Get counters interval offset to launch
-  virtual std::chrono::seconds get_counters_timer_offset() = 0;
-
-  virtual const std::vector<std::string> &counters_uuids() = 0;
+class SubscribeException : public KafkaJSONConsumerException {
+public:
+  SubscribeException(std::string t_errstr)
+      : KafkaJSONConsumerException(t_errstr) {}
 };
 };
 };

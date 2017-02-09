@@ -19,8 +19,9 @@
 
 #include "TestUtils.hpp"
 
-#include "../src/config/config.hpp"
+#include "../src/config/json_config.hpp"
 #include "../src/consumers/kafka_json_uuid_consumer.hpp"
+#include "../src/consumers/kafka_json_uuid_consumer_factory.hpp"
 #include "../src/uuid_counter/uuid_counter.hpp"
 
 #include <gtest/gtest.h>
@@ -34,9 +35,11 @@
 namespace {
 
 using namespace std;
-using namespace EventsCounter;
+using namespace EventsCounter::Consumers;
+using namespace EventsCounter::UUIDCountersDB;
 using namespace EventsCounter::TestUtils;
 using namespace EventsCounter::Configuration;
+using namespace EventsCounter::UUIDCounter;
 
 class UUIDConsumerTest : public ::testing::Test {
 protected:
@@ -104,15 +107,19 @@ public:
 
     unique_ptr<RdKafka::Conf> conf =
         create_test_kafka_consumer_config("kafka:9092", group_id);
-    unique_ptr<Config> config(JsonConfig::json_parse(
+    unique_ptr<JsonConfig> config(new JsonConfig(
         test_config(vector<string>{read_topic}, group_id, write_topic,
                     json_uuid_key, vector<string>{uuid})));
-    unique_ptr<Consumers::KafkaJSONUUIDConsumer> uuid_consumer =
-        config->get_counters_consumer();
-    UUIDCountersDB::UUIDCountersDB::counters_t aux_counters =
+
+    unique_ptr<KafkaUUIDConsumerFactory> factory(new KafkaUUIDConsumerFactory(
+        config->get_counter_read_topics(), config->get_counter_uuid_key(),
+        config->get_counter_consumer_rk_conf_v(),
+        config->get_counter_consumer_rkt_conf_v()));
+
+    unique_ptr<KafkaJSONUUIDConsumer> uuid_consumer = factory->create();
+    UUIDCountersDB::counters_t aux_counters =
         uuid_vector_to_map(config->counters_uuids());
-    UUIDCounter::UUIDCounter counter(
-        uuid_consumer.release(), UUIDCountersDB::UUIDCountersDB(aux_counters));
+    UUIDCounter counter(uuid_consumer.release(), UUIDCountersDB(aux_counters));
 
     // Invalid UUID, should ignore
     UUIDProduce(json_uuid_key, invalid_uuid, read_topic);
