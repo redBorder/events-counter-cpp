@@ -24,9 +24,18 @@
 
 using namespace std;
 using namespace EventsCounter::UUIDCounter;
+using namespace EventsCounter::Consumers;
 
-void UUIDCounter::run(UUIDCounter *instance,
-                      Consumers::KafkaJSONUUIDConsumer *consumer) {
+UUIDCounter::UUIDCounter(unique_ptr<KafkaJSONUUIDConsumer> t_consumer,
+                         UUIDCountersDB::UUIDCountersDB counters_boostrap)
+    : uuid_counters_db(counters_boostrap), consumer(move(t_consumer)) {}
+
+UUIDCounter::~UUIDCounter() {
+  this->running.store(false);
+  this->worker.join();
+}
+
+void UUIDCounter::run(UUIDCounter *instance, KafkaJSONUUIDConsumer *consumer) {
   while (instance->running.load()) {
     Utils::UUIDBytes data = consumer->consume(1000);
     if (data.empty()) {
@@ -49,11 +58,6 @@ void UUIDCounter::run(UUIDCounter *instance,
       break;
     }
   }
-}
-
-UUIDCounter::~UUIDCounter() {
-  this->running.store(false);
-  this->worker.join();
 }
 
 void UUIDCounter::swap_counters(

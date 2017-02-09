@@ -32,8 +32,8 @@ namespace UUIDCounter {
 
 class UUIDCounter {
 private:
-  std::unique_ptr<Consumers::KafkaJSONUUIDConsumer> consumer;
   UUIDCountersDB::UUIDCountersDB uuid_counters_db;
+  std::unique_ptr<Consumers::KafkaJSONUUIDConsumer> consumer;
   std::mutex mtx;
   std::atomic<bool> running{true};
   std::thread worker{run, this, this->consumer.get()};
@@ -42,9 +42,8 @@ private:
                   Consumers::KafkaJSONUUIDConsumer *consumer);
 
 public:
-  UUIDCounter(Consumers::KafkaJSONUUIDConsumer *t_consumer,
-              UUIDCountersDB::UUIDCountersDB counters_boostrap)
-      : consumer(t_consumer), uuid_counters_db(counters_boostrap) {}
+  UUIDCounter(std::unique_ptr<Consumers::KafkaJSONUUIDConsumer> t_consumer,
+              UUIDCountersDB::UUIDCountersDB counters_boostrap);
   ~UUIDCounter();
   UUIDCounter &operator=(const UUIDCounter &) = delete;
 

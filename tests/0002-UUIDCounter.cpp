@@ -118,7 +118,7 @@ public:
         consumer_factory->create();
     UUIDCountersDB::counters_t aux_counters =
         uuid_vector_to_map(config->counters_uuids());
-    UUIDCounter counter(uuid_consumer.release(), UUIDCountersDB(aux_counters));
+    UUIDCounter counter(move(uuid_consumer), UUIDCountersDB(aux_counters));
 
     // Invalid UUID, should ignore
     UUIDProduce(json_uuid_key, invalid_uuid, read_topic);

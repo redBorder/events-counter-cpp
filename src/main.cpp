@@ -162,12 +162,10 @@ int main(int argc, char **argv) {
       make_uuid_counters_boostrap_db(config->counters_uuids());
   UUIDCountersDB boostrap_uuid_db(aux_counters);
 
-  /// @TODO UUID counter should accept consumer in unique_ptr<> reference
-  /// to reference
   try {
     shared_ptr<KafkaJSONCounterProducer> producer(producer_factory->create());
     unique_ptr<KafkaJSONUUIDConsumer> consumer(consumer_factory->create());
-    UUIDCounter counter(consumer.release(), boostrap_uuid_db);
+    UUIDCounter counter(move(consumer), boostrap_uuid_db);
 
     for (;;) {
       const chrono::seconds ticks_period =
