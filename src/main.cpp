@@ -23,6 +23,7 @@
 #include "consumers/kafka_json_uuid_consumer.hpp"
 #include "consumers/kafka_json_uuid_consumer_factory.hpp"
 #include "producers/kafka_json_counter_producer.hpp"
+#include "producers/kafka_json_counter_producer_factory.hpp"
 #include "uuid_counter/uuid_counter.hpp"
 
 #include <chrono>
@@ -33,9 +34,12 @@
 
 using namespace std;
 using namespace std::chrono;
-using namespace EventsCounter;
+using namespace EventsCounter::Utils;
 using namespace EventsCounter::Configuration;
+using namespace EventsCounter::UUIDCountersDB;
+using namespace EventsCounter::UUIDCounter;
 using namespace EventsCounter::Consumers;
+using namespace EventsCounter::Producers;
 
 static const struct option long_options[] = {
     {"help", no_argument, nullptr, 'h'},
@@ -61,7 +65,7 @@ static ssize_t ifstream_binary_size(ifstream &is) {
   return last_pos - first_pos;
 }
 
-static unique_ptr<JsonConfig> parse_json_config_file(const string &path) {
+static unique_ptr<Config> parse_json_config_file(const string &path) {
   ifstream file{};
   file.exceptions(ifstream::failbit | ifstream::badbit);
 
@@ -76,7 +80,7 @@ static unique_ptr<JsonConfig> parse_json_config_file(const string &path) {
     char config_text[file_size + 1];
     file.read(config_text, file_size);
     config_text[file_size] = '\0';
-    return unique_ptr<JsonConfig>(new JsonConfig(config_text));
+    return unique_ptr<Config>(new JsonConfig(config_text));
   } catch (const JSONParserException &e) {
     cerr << "Couldn't parse JSON config in " << path << ": " << e.what()
          << endl;
@@ -109,9 +113,9 @@ static seconds next_tick(const seconds ticks_period, const seconds ticks_offset,
   return next_tick;
 }
 
-static UUIDCountersDB::UUIDCountersDB::counters_t
+static UUIDCountersDB::counters_t
 make_uuid_counters_boostrap_db(vector<string> uuid_list) {
-  UUIDCountersDB::UUIDCountersDB::counters_t boostrap_db;
+  UUIDCountersDB::counters_t boostrap_db;
   for (const auto &uuid : uuid_list) {
     boostrap_db[uuid] = 0;
   }
@@ -144,31 +148,32 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  unique_ptr<JsonConfig> config = parse_json_config_file(config_path);
+  unique_ptr<Config> config = parse_json_config_file(config_path);
   if (config.get() == nullptr) {
     return 1;
   }
 
-  unique_ptr<KafkaUUIDConsumerFactory> factory(new KafkaUUIDConsumerFactory(
-      config->get_counter_read_topics(), config->get_counter_uuid_key(),
-      config->get_counter_consumer_rk_conf_v(),
-      config->get_counter_consumer_rkt_conf_v()));
+  unique_ptr<KafkaUUIDConsumerFactory> consumer_factory(
+      new KafkaUUIDConsumerFactory(config->get_uuid_counter_config()));
+  unique_ptr<KafkaJSONCounterProducerFactory> producer_factory(
+      new KafkaJSONCounterProducerFactory(config->get_uuid_counter_config()));
 
-  UUIDCountersDB::UUIDCountersDB::counters_t aux_counters =
+  UUIDCountersDB::counters_t aux_counters =
       make_uuid_counters_boostrap_db(config->counters_uuids());
-  UUIDCountersDB::UUIDCountersDB boostrap_uuid_db(aux_counters);
-  std::shared_ptr<Producers::KafkaJSONCounterProducer> producer =
-      config->get_counters_producer();
+  UUIDCountersDB boostrap_uuid_db(aux_counters);
 
   /// @TODO UUID counter should accept consumer in unique_ptr<> reference
   /// to reference
   try {
-    unique_ptr<KafkaJSONUUIDConsumer> consumer(factory->create());
-    UUIDCounter::UUIDCounter counter(consumer.release(), boostrap_uuid_db);
+    shared_ptr<KafkaJSONCounterProducer> producer(producer_factory->create());
+    unique_ptr<KafkaJSONUUIDConsumer> consumer(consumer_factory->create());
+    UUIDCounter counter(consumer.release(), boostrap_uuid_db);
 
     for (;;) {
-      const chrono::seconds ticks_period = config->get_counters_timer_period();
-      const chrono::seconds ticks_offset = config->get_counters_timer_offset();
+      const chrono::seconds ticks_period =
+          config->get_uuid_counter_config().period;
+      const chrono::seconds ticks_offset =
+          config->get_uuid_counter_config().offset;
 
       chrono::seconds now = chrono::seconds(std::time(NULL));
       const chrono::seconds next_counters_tick =
@@ -185,13 +190,13 @@ int main(int argc, char **argv) {
       for (auto &t_counter : aux_counters) {
 
         if (t_counter.second > 0) {
-          producer->produce(Utils::UUIDBytes(t_counter.first, t_counter.second),
+          producer->produce(UUIDBytes(t_counter.first, t_counter.second),
                             next_counters_tick);
           t_counter.second = 0;
         }
       }
     }
-  } catch (const Consumers::CreateConsumerException &e) {
+  } catch (const CreateConsumerException &e) {
     cerr << "UUIDConsumer Exception: " << e.what() << endl;
   }
 

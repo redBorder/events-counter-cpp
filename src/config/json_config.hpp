@@ -53,76 +53,60 @@ public:
   using JSONParserException::JSONParserException;
 };
 
-/////////////
-// Structs //
-/////////////
-
-/// Configuration for an UUID forwarder
-struct forwarder_config {
-  /// UUID consumer
-  // std::unique_ptr<UUIDConsumerFactory> consumer_factory;
-
-  /// UUID producer
-  std::shared_ptr<Producers::KafkaJSONCounterProducer> producer;
-
-  /// Time to produce
-  std::chrono::seconds period, offset;
-};
-
-typedef std::vector<std::pair<std::string, std::string>> kafka_conf_list;
-
 ///////////
 // Class //
 ///////////
 
 class JsonConfig : public Config {
-private:
-  // Configuration for an UUID forwarder
-  struct forwarder_config m_counters;
-  std::vector<std::string> m_counters_uuid;
-
-  std::vector<std::string> counter_read_topics;
-  std::string counter_uuid_key;
-  kafka_conf_list counter_consumer_rk_conf_v;
-  kafka_conf_list counter_consumer_rkt_conf_v;
-
-  void parse_uuid_consumer_configuration(
-      const rapidjson::Value::ConstObject &counters_config,
-      struct forwarder_config &fw_config);
 
 public:
   JsonConfig(const std::string &text_config);
 
-  std::vector<std::string> get_counter_read_topics() {
-    return this->counter_read_topics;
+  ///////////////////////////
+  // Config implementation //
+  ///////////////////////////
+
+  struct uuid_counter_config_s get_uuid_counter_config() {
+    return this->uuid_counter_config;
   }
 
-  std::string get_counter_uuid_key() { return this->counter_uuid_key; }
-
-  kafka_conf_list get_counter_consumer_rk_conf_v() {
-    return this->counter_consumer_rk_conf_v;
-  }
-
-  kafka_conf_list get_counter_consumer_rkt_conf_v() {
-    return this->counter_consumer_rkt_conf_v;
-  }
-
-  virtual std::shared_ptr<Producers::KafkaJSONCounterProducer>
-  get_counters_producer() {
-    return this->m_counters.producer;
-  }
-
-  virtual std::chrono::seconds get_counters_timer_period() {
-    return this->m_counters.period;
-  }
-  /// Get counters interval offset to launch
-  virtual std::chrono::seconds get_counters_timer_offset() {
-    return this->m_counters.offset;
+  struct counters_monitor_config_s get_monitor_config() {
+    return this->counters_monitor_config;
   }
 
   virtual const std::vector<std::string> &counters_uuids() {
     return m_counters_uuid;
   };
+
+private:
+  std::vector<std::string> m_counters_uuid;
+  struct uuid_counter_config_s uuid_counter_config;
+  struct counters_monitor_config_s counters_monitor_config;
+
+  /////////////
+  // Helpers //
+  /////////////
+
+  void parse_uuid_consumer_configuration(
+      const rapidjson::Value::ConstObject &json_config,
+      struct kafka_config_s &kafka_config);
+
+  void
+  parse_rdkafka_configuration(const rapidjson::Value::ConstObject &json_config,
+                              struct kafka_config_s &kafka_config);
+
+  std::vector<std::string>
+  parse_read_topics(const rapidjson::Value::ConstObject &json_config,
+                    const std::string &object_name);
+
+  std::string parse_uuid_key(const rapidjson::Value::ConstObject &json_config);
+
+  void
+  parse_uuid_counter_timer(const rapidjson::Value::ConstObject &json_config);
+
+  std::string
+  parse_write_topic(const rapidjson::Value::ConstObject &json_config,
+                    const std::string &object_name);
 
   static std::string rapidjson_type_str(const rapidjson::Type type);
 
@@ -158,8 +142,8 @@ public:
   json_parse_kafka_props(const rapidjson::Value::ConstObject &kafka_props,
                          kafka_conf_list &rk_conf, kafka_conf_list &rkt_conf);
 
-  static void parse_kafka_forwarder_properties(
-      const rapidjson::Value::ConstObject &forwarder_config,
+  static void parse_kafka_properties(
+      const rapidjson::Value::ConstObject &kafka_config,
       kafka_conf_list &consumer_conf, kafka_conf_list &consumer_tconf,
       kafka_conf_list &producer_conf, kafka_conf_list &producer_tconf);
 };

@@ -18,23 +18,26 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "../config/config.hpp"
-#include "kafka_json_uuid_consumer.hpp"
+#include "kafka_json_counter_producer.hpp"
 
 namespace EventsCounter {
-namespace Consumers {
+namespace Producers {
 
-class KafkaUUIDConsumerFactory {
+class KafkaJSONCounterProducerFactory {
 private:
-  Configuration::uuid_counter_config_s uuid_conter_config;
+  Configuration::uuid_counter_config_s uuid_counter_config;
+  std::shared_ptr<KafkaJSONCounterProducer> producer;
 
 public:
-  KafkaUUIDConsumerFactory(
+  KafkaJSONCounterProducerFactory(
       Configuration::uuid_counter_config_s t_uuid_counter_config);
-  KafkaUUIDConsumerFactory(KafkaUUIDConsumerFactory &&) = delete;
-  KafkaUUIDConsumerFactory &operator=(KafkaUUIDConsumerFactory &) = delete;
-  KafkaUUIDConsumerFactory &operator=(KafkaUUIDConsumerFactory &&) = delete;
+  KafkaJSONCounterProducerFactory(KafkaJSONCounterProducerFactory &&) = delete;
+  KafkaJSONCounterProducerFactory &
+  operator=(KafkaJSONCounterProducerFactory &) = delete;
+  KafkaJSONCounterProducerFactory &
+  operator=(KafkaJSONCounterProducerFactory &&) = delete;
 
-  std::unique_ptr<Consumers::KafkaJSONUUIDConsumer> create();
+  std::shared_ptr<KafkaJSONCounterProducer> create();
 };
 };
 };

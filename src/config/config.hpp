@@ -32,23 +32,39 @@
 namespace EventsCounter {
 namespace Configuration {
 
+typedef std::vector<std::pair<std::string, std::string>> kafka_conf_list;
+
+struct kafka_config_s {
+  kafka_conf_list consumer_rk_conf_v;
+  kafka_conf_list consumer_rkt_conf_v;
+
+  kafka_conf_list producer_rk_conf_v;
+  kafka_conf_list producer_rkt_conf_v;
+};
+
+struct uuid_counter_config_s {
+  kafka_config_s kafka_config;
+  std::vector<std::string> read_topics;
+  std::string write_topic;
+  std::string uuid_key;
+  std::chrono::seconds period;
+  std::chrono::seconds offset;
+};
+
+struct counters_monitor_config_s {
+  kafka_config_s kafka_config;
+  std::vector<std::string> read_topics;
+};
+
 class Config {
 public:
   virtual ~Config() = default;
 
-  // virtual std::unique_ptr<Consumers::KafkaJSONUUIDConsumer>
-  // get_counters_consumer() = 0;
-
-  virtual std::shared_ptr<Producers::KafkaJSONCounterProducer>
-  get_counters_producer() = 0;
-
-  /// Get counters interval period
-  virtual std::chrono::seconds get_counters_timer_period() = 0;
-
-  /// Get counters interval offset to launch
-  virtual std::chrono::seconds get_counters_timer_offset() = 0;
-
   virtual const std::vector<std::string> &counters_uuids() = 0;
+
+  virtual struct uuid_counter_config_s get_uuid_counter_config() = 0;
+
+  virtual struct counters_monitor_config_s get_monitor_config() = 0;
 };
 };
 };
