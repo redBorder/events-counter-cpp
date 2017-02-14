@@ -29,7 +29,7 @@
 namespace EventsCounter {
 namespace Producers {
 
-class KafkaJSONCounterProducer : public MonitorProducer {
+class KafkaJSONCounterProducer {
 public:
   KafkaJSONCounterProducer(RdKafka::Producer *t_kafka_producer,
                            RdKafka::Topic *t_kafka_topic)

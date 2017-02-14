@@ -17,27 +17,49 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "../utils/kafka_utils.hpp"
+#include "../writters/json_monitor_writter.hpp"
 #include "kafka_monitor_producer.hpp"
 
 #include <chrono>
 #include <iostream>
 
 using namespace EventsCounter::Producers;
+using namespace EventsCounter::Formatters;
+using namespace EventsCounter::Utils;
 using namespace std;
 using namespace std::chrono;
 
-ErrorCode KafkaMonitorProducer::produce(const Utils::UUIDBytes &counter,
-                                        chrono::seconds timestamp) {
-  /// TODO extract JSON formatting
-  const string s = string("{\"monitor\":\"sensor_received_bytes\"") +
-                   ",\"uuid\":\"" + counter.get_uuid() + "\",\"value\":" +
-                   to_string(counter.get_bytes()) + ",\"timestamp\":" +
-                   to_string(timestamp.count()) + '}';
+KafkaMonitorProducer::KafkaMonitorProducer(
+    struct Configuration::counters_monitor_config_s &config) {
+  string errstr;
+
+  unique_ptr<RdKafka::Conf> conf(
+      RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
+  unique_ptr<RdKafka::Conf> tconf(
+      RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
+
+  rdkafka_set_conf_vector(config.kafka_config.producer_rk_conf_v, conf,
+                          "kafka");
+  rdkafka_set_conf_vector(config.kafka_config.producer_rkt_conf_v, tconf,
+                          "topic");
+
+  // TODO
+  // conf->set("dr_cb", &events_counter_cb, errstr);
+
+  this->kafka_producer.reset(RdKafka::Producer::create(conf.get(), errstr));
+  this->kafka_topic.reset(RdKafka::Topic::create(
+      this->kafka_producer.get(), config.write_topic, tconf.get(), errstr));
+}
+
+ErrorCode KafkaMonitorProducer::produce(const Utils::UUIDBytes &counter) {
+  unique_ptr<JSONKafkaMessage> message(new JSONKafkaMessage());
+  JSONMonitorWritter<>(counter, message->string_buffer);
 
   const RdKafka::ErrorCode produce_rc = this->kafka_producer->produce(
       this->kafka_topic.get(), RdKafka::Topic::PARTITION_UA,
-      RdKafka::Producer::RK_MSG_COPY, const_cast<char *>(s.c_str()), s.size(),
-      NULL, NULL);
+      RdKafka::Producer::RK_MSG_COPY, message->payload(), message->len(), NULL,
+      NULL);
 
   switch (produce_rc) {
   case RdKafka::ERR__QUEUE_FULL:

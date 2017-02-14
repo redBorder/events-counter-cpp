@@ -21,30 +21,19 @@
 
 #include "../utils/uuid_bytes.hpp"
 
-#include <chrono>
-#include <memory>
-#include <thread>
-
-typedef enum {
-  NO_ERROR,
-  ERR_QUEUE_FULL,
-  ERR_MSG_TOO_LARGE,
-} ErrorCode;
-
 namespace EventsCounter {
-namespace Producers {
+namespace Consumers {
 
-class MonitorProducer {
+class EventsConsumer {
 public:
-  virtual ~MonitorProducer() = default;
+  virtual ~EventsConsumer() = default;
 
   /**
-   * [produce description]
-   * @param  counter   [description]
-   * @param  timestamp [description]
-   * @return           [description]
+   * [consume description]
+   * @param  timeout_ms [description]
+   * @return            [description]
    */
-  virtual ErrorCode produce(const Utils::UUIDBytes &counter) = 0;
+  virtual Utils::UUIDBytes consume(uint32_t timeout_ms) const = 0;
 };
 };
 };

@@ -19,32 +19,26 @@
 
 #pragma once
 
-#include "../utils/uuid_bytes.hpp"
+#include "../consumers/events_consumer.hpp"
+#include "../producers/monitor_producer.hpp"
+#include "../uuid_counters_db/uuid_counters_db.hpp"
 
-#include <chrono>
 #include <memory>
-#include <thread>
-
-typedef enum {
-  NO_ERROR,
-  ERR_QUEUE_FULL,
-  ERR_MSG_TOO_LARGE,
-} ErrorCode;
 
 namespace EventsCounter {
-namespace Producers {
+namespace UUIDCountersMonitor {
 
-class MonitorProducer {
+class UUIDCountersMonitor {
+private:
+  UUIDCountersDB::UUIDCountersDB db;
+  UUIDCountersDB::UUIDCountersDB::counters_t limits;
+
 public:
-  virtual ~MonitorProducer() = default;
+  UUIDCountersMonitor(UUIDCountersDB::UUIDCountersDB db,
+                      UUIDCountersDB::UUIDCountersDB::counters_t limits);
 
-  /**
-   * [produce description]
-   * @param  counter   [description]
-   * @param  timestamp [description]
-   * @return           [description]
-   */
-  virtual ErrorCode produce(const Utils::UUIDBytes &counter) = 0;
+  void reset(UUIDCountersDB::UUIDCountersDB::counters_t counters);
+  bool check(const std::string &uuid, uint64_t bytes);
 };
 };
 };

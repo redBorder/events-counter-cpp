@@ -19,12 +19,16 @@
 
 #include "config/config.hpp"
 #include "config/json_config.hpp"
+#include "consumers/events_consumer.hpp"
 #include "consumers/kafka_json_counter_consumer.hpp"
 #include "consumers/kafka_json_uuid_consumer.hpp"
 #include "consumers/kafka_json_uuid_consumer_factory.hpp"
 #include "producers/kafka_json_counter_producer.hpp"
 #include "producers/kafka_json_counter_producer_factory.hpp"
+#include "producers/kafka_monitor_producer.hpp"
+#include "utils/uuid_bytes.hpp"
 #include "uuid_counter/uuid_counter.hpp"
+#include "uuid_counters_monitor/uuid_counters_monitor.hpp"
 
 #include <chrono>
 #include <fstream>
@@ -37,6 +41,7 @@ using namespace std::chrono;
 using namespace EventsCounter::Utils;
 using namespace EventsCounter::Configuration;
 using namespace EventsCounter::UUIDCountersDB;
+using namespace EventsCounter::UUIDCountersMonitor;
 using namespace EventsCounter::UUIDCounter;
 using namespace EventsCounter::Consumers;
 using namespace EventsCounter::Producers;
@@ -92,9 +97,8 @@ static unique_ptr<Config> parse_json_config_file(const string &path) {
 }
 
 // Using all duration, not time point. Make the code simpler.
-static seconds next_tick(const seconds ticks_period, const seconds ticks_offset,
-                         const seconds now) {
-
+static seconds next_tick(const seconds ticks_period, const seconds now,
+                         const seconds ticks_offset = seconds(0)) {
   if (ticks_period == seconds(0)) {
     cerr << "Period can't be zero" << endl;
     exit(1);
@@ -153,43 +157,97 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  unique_ptr<KafkaUUIDConsumerFactory> consumer_factory(
-      new KafkaUUIDConsumerFactory(config->get_uuid_counter_config()));
-  unique_ptr<KafkaJSONCounterProducerFactory> producer_factory(
-      new KafkaJSONCounterProducerFactory(config->get_uuid_counter_config()));
-
-  UUIDCountersDB::counters_t aux_counters =
-      make_uuid_counters_boostrap_db(config->counters_uuids());
-  UUIDCountersDB boostrap_uuid_db(aux_counters);
-
   try {
-    shared_ptr<KafkaJSONCounterProducer> producer(producer_factory->create());
-    unique_ptr<KafkaJSONUUIDConsumer> consumer(consumer_factory->create());
-    UUIDCounter counter(move(consumer), boostrap_uuid_db);
+    ///////////////////
+    // UUID Consumer //
+    ///////////////////
 
-    for (;;) {
-      const chrono::seconds ticks_period =
-          config->get_uuid_counter_config().period;
-      const chrono::seconds ticks_offset =
-          config->get_uuid_counter_config().offset;
+    KafkaUUIDConsumerFactory consumer_factory(
+        config->get_uuid_counter_config());
+    unique_ptr<KafkaJSONUUIDConsumer> uuid_consumer(consumer_factory.create());
 
-      chrono::seconds now = chrono::seconds(std::time(NULL));
+    //////////////////////
+    // Counter Producer //
+    //////////////////////
+
+    KafkaJSONCounterProducerFactory producer_factory(
+        config->get_uuid_counter_config());
+    shared_ptr<KafkaJSONCounterProducer> counter_producer(
+        producer_factory.create());
+
+    /////////////
+    // Counter //
+    /////////////
+
+    UUIDCountersDB boostrap_uuid_db(
+        make_uuid_counters_boostrap_db(config->counters_uuids()));
+    UUIDCounter counter(move(uuid_consumer), boostrap_uuid_db);
+
+    //////////////////////
+    // Counters Monitor //
+    //////////////////////
+
+    struct counters_monitor_config_s monitor_config =
+        config->get_monitor_config();
+    UUIDCountersDB monitor_db(
+        make_uuid_counters_boostrap_db(config->counters_uuids()));
+    UUIDCountersDB::counters_t limits(monitor_config.limits);
+    unique_ptr<EventsConsumer> counter_consumer(
+        new KafkaJSONCounterConsumer(monitor_config));
+    unique_ptr<MonitorProducer> monitor_producer(
+        new KafkaMonitorProducer(monitor_config));
+    UUIDCountersMonitor monitor(monitor_db, limits);
+
+    ///////////////
+    // Main loop //
+    ///////////////
+
+    chrono::seconds now = chrono::seconds(time(NULL));
+    chrono::seconds next_monitor_tick =
+        next_tick(config->get_monitor_config().period, now,
+                  config->get_monitor_config().offset);
+
+    while (true) {
       const chrono::seconds next_counters_tick =
-          next_tick(ticks_period, ticks_offset, now);
+          next_tick(config->get_uuid_counter_config().update_period, now);
 
-      // Do idle tasks until I need something
+      ////////////////////////////////////////////
+      // Monitor counters between counter ticks //
+      ////////////////////////////////////////////
+
       while (now < next_counters_tick) {
-        this_thread::sleep_for(next_counters_tick - now);
-        now = chrono::seconds(std::time(NULL));
+        now = chrono::seconds(time(NULL));
+
+        // Time to clear monitor
+        if (now > next_monitor_tick) {
+          monitor.reset(
+              make_uuid_counters_boostrap_db(config->counters_uuids()));
+          next_monitor_tick = chrono::seconds(
+              next_tick(config->get_monitor_config().period, now,
+                        config->get_monitor_config().offset));
+        }
+
+        UUIDBytes uuid_bytes = counter_consumer->consume(1);
+        if (uuid_bytes.empty()) {
+          continue;
+        }
+
+        if (monitor.check(uuid_bytes.get_uuid(), uuid_bytes.get_bytes())) {
+          monitor_producer->produce(uuid_bytes);
+        }
       }
 
-      // Tick! produce UUID messages and clear counter
-      counter.swap_counters(aux_counters);
-      for (auto &t_counter : aux_counters) {
+      ///////////////////
+      // Counter ticks //
+      ///////////////////
 
+      UUIDCountersDB::counters_t counters_uuids =
+          make_uuid_counters_boostrap_db(config->counters_uuids());
+      counter.swap_counters(counters_uuids);
+      for (auto &t_counter : counters_uuids) {
         if (t_counter.second > 0) {
-          producer->produce(UUIDBytes(t_counter.first, t_counter.second),
-                            next_counters_tick);
+          counter_producer->produce(
+              UUIDBytes(t_counter.first, t_counter.second), next_counters_tick);
           t_counter.second = 0;
         }
       }

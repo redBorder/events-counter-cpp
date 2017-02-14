@@ -74,9 +74,7 @@ public:
     return this->counters_monitor_config;
   }
 
-  virtual const std::vector<std::string> &counters_uuids() {
-    return m_counters_uuid;
-  };
+  const std::vector<std::string> &counters_uuids() { return m_counters_uuid; };
 
 private:
   std::vector<std::string> m_counters_uuid;
@@ -87,26 +85,88 @@ private:
   // Helpers //
   /////////////
 
+  /**
+   * [parse_uuid_consumer_configuration description]
+   * @param json_config  [description]
+   * @param kafka_config [description]
+   */
   void parse_uuid_consumer_configuration(
       const rapidjson::Value::ConstObject &json_config,
-      struct kafka_config_s &kafka_config);
+      struct kafka_config_s &kafka_config) const;
 
+  /**
+   * [parse_rdkafka_configuration description]
+   * @param json_config  [description]
+   * @param kafka_config [description]
+   */
   void
   parse_rdkafka_configuration(const rapidjson::Value::ConstObject &json_config,
-                              struct kafka_config_s &kafka_config);
+                              struct kafka_config_s &kafka_config,
+                              const std::string &object_name) const;
 
+  /**
+   * [parse_limits description]
+   * @param json_config  [description]
+   * @param kafka_config [description]
+   */
+  UUIDCountersDB::UUIDCountersDB::counters_t
+  parse_limits(const rapidjson::Value::ConstObject &json_config) const;
+
+  /**
+   * [parse_limits description]
+   * @param json_config  [description]
+   * @param kafka_config [description]
+   */
+  std::string
+  parse_read_topic(const rapidjson::Value::ConstObject &json_config) const;
+
+  /**
+   * [parse_limits description]
+   * @param json_config  [description]
+   * @param kafka_config [description]
+   */
   std::vector<std::string>
   parse_read_topics(const rapidjson::Value::ConstObject &json_config,
-                    const std::string &object_name);
+                    const std::string &object_name) const;
 
-  std::string parse_uuid_key(const rapidjson::Value::ConstObject &json_config);
+  /**
+   * [parse_limits description]
+   * @param json_config  [description]
+   * @param kafka_config [description]
+   */
+  std::string
+  parse_uuid_key(const rapidjson::Value::ConstObject &json_config) const;
 
-  void
-  parse_uuid_counter_timer(const rapidjson::Value::ConstObject &json_config);
+  /**
+   * [parse_limits description]
+   * @param json_config  [description]
+   * @param kafka_config [description]
+   */
+  std::pair<std::chrono::seconds, std::chrono::seconds>
+  parse_timer(const rapidjson::Value::ConstObject &json_config,
+              const std::string &object_name) const;
 
+  /**
+   * [parse_limits description]
+   * @param json_config  [description]
+   * @param kafka_config [description]
+   */
+  uint64_t
+  parse_update_interval(const rapidjson::Value::ConstObject &json_config,
+                        const std::string &object_name) const;
+
+  /**
+   * [parse_limits description]
+   * @param json_config  [description]
+   * @param kafka_config [description]
+   */
   std::string
   parse_write_topic(const rapidjson::Value::ConstObject &json_config,
-                    const std::string &object_name);
+                    const std::string &object_name) const;
+
+  ///////////////////////////
+  // Helper static methods //
+  ///////////////////////////
 
   static std::string rapidjson_type_str(const rapidjson::Type type);
 

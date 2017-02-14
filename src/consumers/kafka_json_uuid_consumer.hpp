@@ -20,6 +20,7 @@
 #pragma once
 
 #include "../utils/uuid_bytes.hpp"
+#include "events_consumer.hpp"
 #include "kafka_json_consumer_exceptions.hpp"
 
 #include <librdkafka/rdkafkacpp.h>
@@ -32,7 +33,7 @@ namespace Consumers {
 /**
  * Class for consume and parse JSON messages from Kafka
  */
-class KafkaJSONUUIDConsumer {
+class KafkaJSONUUIDConsumer : public EventsConsumer {
 private:
   std::unique_ptr<RdKafka::KafkaConsumer> kafka_consumer;
   std::string json_uuid_key;
@@ -47,7 +48,6 @@ public:
                         RdKafka::Conf *t_kafka_consumer_conf);
 
   ~KafkaJSONUUIDConsumer();
-
   KafkaJSONUUIDConsumer(KafkaJSONUUIDConsumer &&) = delete;
   KafkaJSONUUIDConsumer &operator=(const KafkaJSONUUIDConsumer &) = delete;
   KafkaJSONUUIDConsumer &operator=(const KafkaJSONUUIDConsumer &&) = delete;

@@ -17,6 +17,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "../utils/kafka_utils.hpp"
 #include "kafka_json_uuid_consumer_factory.hpp"
 
 #include <iostream>
@@ -26,38 +27,6 @@ using namespace EventsCounter::Configuration;
 using namespace std;
 using namespace RdKafka;
 
-/////////////
-// Helpers //
-/////////////
-
-static void
-rdkafka_set_conf_vector(const vector<pair<string, string>> &conf_parameters,
-                        Conf *conf, const string &err_conf_type) {
-  string errstr;
-  for (const auto &itr : conf_parameters) {
-    const Conf::ConfResult rc = conf->set(itr.first, itr.second, errstr);
-    switch (rc) {
-    case Conf::CONF_UNKNOWN:
-      cerr << "Unknown " << err_conf_type << " property " << itr.first << ": "
-           << errstr << endl;
-      continue;
-
-    case Conf::CONF_INVALID:
-      cerr << "Unknown " << err_conf_type << " property value " << itr.second
-           << " for key " << itr.first << ": " << errstr << endl;
-      continue;
-
-    case Conf::CONF_OK:
-    default:
-      break;
-    };
-  }
-}
-
-//////////////////////////////
-// KafkaUUIDConsumerFactory //
-//////////////////////////////
-
 KafkaUUIDConsumerFactory::KafkaUUIDConsumerFactory(
     uuid_counter_config_s t_uuid_counter_config)
     : uuid_conter_config(t_uuid_counter_config) {}
@@ -65,15 +34,14 @@ KafkaUUIDConsumerFactory::KafkaUUIDConsumerFactory(
 unique_ptr<KafkaJSONUUIDConsumer> KafkaUUIDConsumerFactory::create() {
   string errstr;
 
-  unique_ptr<Conf> conf(Conf::create(Conf::CONF_GLOBAL)),
-      tconf(Conf::create(Conf::CONF_TOPIC));
+  unique_ptr<Conf> conf(Conf::create(Conf::CONF_GLOBAL));
+  unique_ptr<Conf> tconf(Conf::create(Conf::CONF_TOPIC));
 
-  rdkafka_set_conf_vector(
-      this->uuid_conter_config.kafka_config.consumer_rkt_conf_v, tconf.get(),
+  Utils::rdkafka_set_conf_vector(
+      this->uuid_conter_config.kafka_config.consumer_rkt_conf_v, tconf,
       "topic");
-  rdkafka_set_conf_vector(
-      this->uuid_conter_config.kafka_config.consumer_rk_conf_v, conf.get(),
-      "kafka");
+  Utils::rdkafka_set_conf_vector(
+      this->uuid_conter_config.kafka_config.consumer_rk_conf_v, conf, "kafka");
   conf->set("default_topic_conf", tconf.get(), errstr);
 
   return unique_ptr<KafkaJSONUUIDConsumer>(

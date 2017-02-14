@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "../config/config.hpp"
 #include "../utils/uuid_bytes.hpp"
 #include "monitor_producer.hpp"
 
@@ -30,33 +31,27 @@ namespace EventsCounter {
 namespace Producers {
 
 class KafkaMonitorProducer : public MonitorProducer {
-public:
-  KafkaMonitorProducer(RdKafka::Producer *t_kafka_producer,
-                       RdKafka::Topic *t_kafka_topic)
-      : kafka_producer(t_kafka_producer), kafka_topic(t_kafka_topic) {}
+private:
+  std::unique_ptr<RdKafka::Producer> kafka_producer;
+  std::unique_ptr<RdKafka::Topic> kafka_topic;
 
+public:
+  KafkaMonitorProducer(struct Configuration::counters_monitor_config_s &config);
+  KafkaMonitorProducer(KafkaMonitorProducer &) = delete;
+  KafkaMonitorProducer(KafkaMonitorProducer &&) = delete;
+  KafkaMonitorProducer &operator=(KafkaMonitorProducer &) = delete;
+  KafkaMonitorProducer &operator=(KafkaMonitorProducer &&) = delete;
   ~KafkaMonitorProducer() {
     while (this->kafka_producer->outq_len() > 0) {
       this->kafka_producer->poll(100);
     }
   }
 
-  ErrorCode produce(const Utils::UUIDBytes &counter,
-                    const std::chrono::seconds duration);
-
-  KafkaMonitorProducer(KafkaMonitorProducer &) = delete;
-  KafkaMonitorProducer(KafkaMonitorProducer &&) = delete;
-  KafkaMonitorProducer &operator=(KafkaMonitorProducer &) = delete;
-  KafkaMonitorProducer &operator=(KafkaMonitorProducer &&) = delete;
-
+  ErrorCode produce(const Utils::UUIDBytes &counter);
   void do_idle_tasks(
       std::chrono::milliseconds timeout = std::chrono::milliseconds(0)) {
     kafka_producer->poll(timeout.count());
   }
-
-private:
-  std::unique_ptr<RdKafka::Producer> kafka_producer;
-  std::unique_ptr<RdKafka::Topic> kafka_topic;
 };
 };
 };

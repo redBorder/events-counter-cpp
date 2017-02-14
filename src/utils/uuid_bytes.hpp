@@ -27,12 +27,14 @@ namespace Utils {
 
 class UUIDBytes {
 private:
-  std::pair<std::string, uint64_t> pair;
+  std::string uuid;
+  uint64_t bytes;
+  uint64_t timestamp;
   bool is_empty;
 
 public:
-  UUIDBytes(std::string uuid, uint64_t bytes)
-      : pair(uuid, bytes), is_empty(false) {}
+  UUIDBytes(std::string t_uuid, uint64_t t_bytes, uint64_t t_timestamp = 0)
+      : uuid(t_uuid), bytes(t_bytes), timestamp(t_timestamp), is_empty(false) {}
 
   UUIDBytes() : is_empty(true) {}
 
@@ -40,13 +42,19 @@ public:
    * [get_uuid description]
    * @return [description]
    */
-  const std::string &get_uuid() const { return this->pair.first; }
+  const std::string &get_uuid() const { return this->uuid; }
 
   /**
    * [get_bytes description]
    * @return [description]
    */
-  uint64_t get_bytes() const { return this->pair.second; }
+  uint64_t get_bytes() const { return this->bytes; }
+
+  /**
+   * [get_bytes description]
+   * @return [description]
+   */
+  uint64_t get_timestamp() const { return this->timestamp; }
 
   /**
    * [empty description]
