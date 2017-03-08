@@ -158,12 +158,21 @@ int main(int argc, char **argv) {
   }
 
   try {
+    ////////////////////////////////////////////////////////////////////////////
+    // COUNTER                                                                //
+    ////////////////////////////////////////////////////////////////////////////
+
+    uuid_counter_config_s uuid_counter_config =
+        config->get_uuid_counter_config();
+
     ///////////////////
     // UUID Consumer //
     ///////////////////
 
     KafkaUUIDConsumerFactory consumer_factory(
-        config->get_uuid_counter_config());
+        uuid_counter_config.uuid_key, uuid_counter_config.read_topics,
+        uuid_counter_config.kafka_config.consumer_rk_conf_v,
+        uuid_counter_config.kafka_config.consumer_rkt_conf_v);
     unique_ptr<KafkaJSONUUIDConsumer> uuid_consumer(consumer_factory.create());
 
     //////////////////////
@@ -183,19 +192,38 @@ int main(int argc, char **argv) {
         make_uuid_counters_boostrap_db(config->counters_uuids()));
     UUIDCounter counter(move(uuid_consumer), boostrap_uuid_db);
 
+    ////////////////////////////////////////////////////////////////////////////
+    // MONITOR                                                                //
+    ////////////////////////////////////////////////////////////////////////////
+
+    struct counters_monitor_config_s counters_monitor_config =
+        config->get_monitor_config();
+
+    //////////////////////
+    // Counter Consumer //
+    //////////////////////
+
+    unique_ptr<EventsConsumer> counter_consumer(new KafkaJSONCounterConsumer(
+        counters_monitor_config.period.count(),
+        counters_monitor_config.offset.count(),
+        counters_monitor_config.read_topic,
+        counters_monitor_config.kafka_config.consumer_rk_conf_v,
+        counters_monitor_config.kafka_config.consumer_rkt_conf_v));
+
+    //////////////////////
+    // Monitor Producer //
+    //////////////////////
+
+    unique_ptr<MonitorProducer> monitor_producer(
+        new KafkaMonitorProducer(counters_monitor_config));
+
     //////////////////////
     // Counters Monitor //
     //////////////////////
 
-    struct counters_monitor_config_s monitor_config =
-        config->get_monitor_config();
     UUIDCountersDB monitor_db(
         make_uuid_counters_boostrap_db(config->counters_uuids()));
-    UUIDCountersDB::counters_t limits(monitor_config.limits);
-    unique_ptr<EventsConsumer> counter_consumer(
-        new KafkaJSONCounterConsumer(monitor_config));
-    unique_ptr<MonitorProducer> monitor_producer(
-        new KafkaMonitorProducer(monitor_config));
+    UUIDCountersDB::counters_t limits(counters_monitor_config.limits);
     UUIDCountersMonitor monitor(monitor_db, limits);
 
     ///////////////

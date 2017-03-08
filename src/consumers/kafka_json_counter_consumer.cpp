@@ -35,20 +35,19 @@ using namespace RdKafka;
 using namespace std;
 
 KafkaJSONCounterConsumer::KafkaJSONCounterConsumer(
-    struct counters_monitor_config_s &config)
-    : period(config.period.count()), offset(config.offset.count()) {
+    uint64_t t_period, uint64_t t_offset, const string &read_topic,
+    kafka_conf_list_t t_rk_conf_v, kafka_conf_list_t t_rkt_conf_v)
+    : period(t_period), offset(t_offset) {
   string errstr;
 
   vector<string> topics;
-  topics.push_back(config.read_topic);
+  topics.push_back(read_topic);
 
   const unique_ptr<Conf> conf(Conf::create(Conf::CONF_GLOBAL));
   unique_ptr<Conf> tconf(Conf::create(Conf::CONF_TOPIC));
 
-  rdkafka_set_conf_vector(config.kafka_config.consumer_rk_conf_v, conf,
-                          "kafka");
-  rdkafka_set_conf_vector(config.kafka_config.consumer_rkt_conf_v, tconf,
-                          "topic");
+  rdkafka_set_conf_vector(t_rk_conf_v, conf, "kafka");
+  rdkafka_set_conf_vector(t_rkt_conf_v, tconf, "topic");
 
   conf->set("default_topic_conf", tconf.get(), errstr);
 

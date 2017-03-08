@@ -23,13 +23,20 @@
 namespace EventsCounter {
 namespace Consumers {
 
+typedef std::vector<std::pair<std::string, std::string>> kafka_conf_list;
+
 class KafkaUUIDConsumerFactory {
 private:
-  Configuration::uuid_counter_config_s uuid_conter_config;
+  std::string uuid_key;
+  std::vector<std::string> read_topics;
+  kafka_conf_list consumer_rk_conf_v;
+  kafka_conf_list consumer_rkt_conf_v;
 
 public:
-  KafkaUUIDConsumerFactory(
-      Configuration::uuid_counter_config_s t_uuid_counter_config);
+  KafkaUUIDConsumerFactory(const std::string t_uuid_key,
+                           const std::vector<std::string> t_read_topics,
+                           kafka_conf_list t_consumer_rk_conf_v,
+                           kafka_conf_list t_consumer_rkt_conf_v);
   KafkaUUIDConsumerFactory(KafkaUUIDConsumerFactory &&) = delete;
   KafkaUUIDConsumerFactory &operator=(KafkaUUIDConsumerFactory &) = delete;
   KafkaUUIDConsumerFactory &operator=(KafkaUUIDConsumerFactory &&) = delete;

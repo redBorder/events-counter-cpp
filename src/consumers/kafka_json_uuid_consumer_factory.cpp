@@ -28,8 +28,11 @@ using namespace std;
 using namespace RdKafka;
 
 KafkaUUIDConsumerFactory::KafkaUUIDConsumerFactory(
-    uuid_counter_config_s t_uuid_counter_config)
-    : uuid_conter_config(t_uuid_counter_config) {}
+    const std::string t_uuid_key, const std::vector<std::string> t_read_topics,
+    kafka_conf_list t_consumer_rk_conf_v, kafka_conf_list t_consumer_rkt_conf_v)
+    : uuid_key(t_uuid_key), read_topics(t_read_topics),
+      consumer_rk_conf_v(t_consumer_rk_conf_v),
+      consumer_rkt_conf_v(t_consumer_rkt_conf_v) {}
 
 unique_ptr<KafkaJSONUUIDConsumer> KafkaUUIDConsumerFactory::create() {
   string errstr;
@@ -37,14 +40,10 @@ unique_ptr<KafkaJSONUUIDConsumer> KafkaUUIDConsumerFactory::create() {
   unique_ptr<Conf> conf(Conf::create(Conf::CONF_GLOBAL));
   unique_ptr<Conf> tconf(Conf::create(Conf::CONF_TOPIC));
 
-  Utils::rdkafka_set_conf_vector(
-      this->uuid_conter_config.kafka_config.consumer_rkt_conf_v, tconf,
-      "topic");
-  Utils::rdkafka_set_conf_vector(
-      this->uuid_conter_config.kafka_config.consumer_rk_conf_v, conf, "kafka");
+  Utils::rdkafka_set_conf_vector(this->consumer_rkt_conf_v, tconf, "topic");
+  Utils::rdkafka_set_conf_vector(this->consumer_rk_conf_v, conf, "kafka");
   conf->set("default_topic_conf", tconf.get(), errstr);
 
   return unique_ptr<KafkaJSONUUIDConsumer>(
-      new KafkaJSONUUIDConsumer(this->uuid_conter_config.read_topics,
-                                this->uuid_conter_config.uuid_key, conf.get()));
+      new KafkaJSONUUIDConsumer(this->read_topics, this->uuid_key, conf.get()));
 }

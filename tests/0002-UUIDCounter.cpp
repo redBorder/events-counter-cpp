@@ -126,9 +126,12 @@ public:
         test_config(vector<string>{read_topics}, read_topic, group_id,
                     write_topic, json_uuid_key, vector<string>{uuid})));
 
+    auto uuid_counter_config = config->get_uuid_counter_config();
     unique_ptr<KafkaUUIDConsumerFactory> consumer_factory(
-        new KafkaUUIDConsumerFactory(config->get_uuid_counter_config()));
-
+        new KafkaUUIDConsumerFactory(
+            uuid_counter_config.uuid_key, uuid_counter_config.read_topics,
+            uuid_counter_config.kafka_config.consumer_rk_conf_v,
+            uuid_counter_config.kafka_config.consumer_rkt_conf_v));
     unique_ptr<KafkaJSONUUIDConsumer> uuid_consumer =
         consumer_factory->create();
     UUIDCountersDB::counters_t aux_counters =

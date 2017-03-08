@@ -30,6 +30,8 @@
 namespace EventsCounter {
 namespace Consumers {
 
+typedef std::vector<std::pair<std::string, std::string>> kafka_conf_list_t;
+
 class KafkaJSONCounterConsumer : public EventsConsumer {
 private:
   std::unique_ptr<RdKafka::KafkaConsumer> kafka_consumer;
@@ -40,8 +42,10 @@ private:
   get_message_uuid_bytes(std::unique_ptr<RdKafka::Message> &message) const;
 
 public:
-  KafkaJSONCounterConsumer(
-      struct Configuration::counters_monitor_config_s &config);
+  KafkaJSONCounterConsumer(uint64_t t_period, uint64_t t_offset,
+                           const std::string &read_topic,
+                           kafka_conf_list_t t_rk_conf_v,
+                           kafka_conf_list_t t_rkt_conf_v);
   ~KafkaJSONCounterConsumer() {}
   KafkaJSONCounterConsumer(KafkaJSONCounterConsumer &&) = delete;
   KafkaJSONCounterConsumer &
