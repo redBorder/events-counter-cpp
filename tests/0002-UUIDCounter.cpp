@@ -55,22 +55,36 @@ protected:
     return ret.str();
   }
 
-  static string test_config(const vector<string> &read_topics,
-                            const string &read_group_id,
-                            const string &write_topic,
-                            const string &json_uuid_key,
-                            const vector<string> &uuids) {
+  static string
+  test_config(const vector<string> &read_topics, const string &read_topic,
+              const string &read_group_id, const string &write_topic,
+              const string &json_uuid_key, const vector<string> &uuids) {
     const string read_topics_s = vector_to_json(read_topics);
     const string uuids_s = vector_to_json(uuids);
 
     stringstream ss;
     // clang-format off
 		ss << '{' <<
-                    "\"counters_config\":{" <<
+                    "\"monitor_config\":{" <<
                         "\"timer_seconds\": {" <<
                             "\"period\":5," <<
                             "\"offset\":4" <<
                         "}," <<
+                        "\"read_topic\": \"" << read_topic << "\"," <<
+                        "\"write_topic\":\"" << write_topic << "\"," <<
+                        "\"rdkafka\": {" <<
+                            "\"read\":{" <<
+                                "\"group.id\":\"" << read_group_id << "\"," <<
+                                "\"metadata.broker.list\":\"kafka:9092\","
+                                "\"topic.auto.offset.reset\":\"smallest\""
+                            "}" <<
+                        "}," <<
+                        "\"limits\": [" <<
+                            "{\"uuid\": \"123456\", \"limit\": 100 }" <<
+                        "]" <<
+                    "}," <<
+                    "\"counters_config\":{" <<
+                        "\"update_interval\": 1," <<
                         "\"json_read_uuid_key\":\"" << json_uuid_key << "\"," <<
                         "\"read_topics\":[" << read_topics_s << "]," <<
                         "\"write_topic\":\"" << write_topic << "\"," <<
@@ -101,6 +115,7 @@ public:
     static const string json_uuid_key = "sensor_uuid";
     static const string uuid = "123456";
     static const string invalid_uuid = uuid + "7";
+    const string read_topics = random_topic();
     const string read_topic = random_topic();
     const string group_id = string("group_") + read_topic;
     const string write_topic = random_topic();
@@ -108,12 +123,15 @@ public:
     unique_ptr<RdKafka::Conf> conf =
         create_test_kafka_consumer_config("kafka:9092", group_id);
     unique_ptr<JsonConfig> config(new JsonConfig(
-        test_config(vector<string>{read_topic}, group_id, write_topic,
-                    json_uuid_key, vector<string>{uuid})));
+        test_config(vector<string>{read_topics}, read_topic, group_id,
+                    write_topic, json_uuid_key, vector<string>{uuid})));
 
+    auto uuid_counter_config = config->get_uuid_counter_config();
     unique_ptr<KafkaUUIDConsumerFactory> consumer_factory(
-        new KafkaUUIDConsumerFactory(config->get_uuid_counter_config()));
-
+        new KafkaUUIDConsumerFactory(
+            uuid_counter_config.uuid_key, uuid_counter_config.read_topics,
+            uuid_counter_config.kafka_config.consumer_rk_conf_v,
+            uuid_counter_config.kafka_config.consumer_rkt_conf_v));
     unique_ptr<KafkaJSONUUIDConsumer> uuid_consumer =
         consumer_factory->create();
     UUIDCountersDB::counters_t aux_counters =
@@ -121,9 +139,9 @@ public:
     UUIDCounter counter(move(uuid_consumer), UUIDCountersDB(aux_counters));
 
     // Invalid UUID, should ignore
-    UUIDProduce(json_uuid_key, invalid_uuid, read_topic);
+    UUIDProduce(json_uuid_key, invalid_uuid, read_topics);
     // Valid UUID, should accept
-    UUIDProduce(json_uuid_key, uuid, read_topic);
+    UUIDProduce(json_uuid_key, uuid, read_topics);
     while (true) {
       counter.swap_counters(aux_counters);
       if (aux_counters[uuid] != 0) {
@@ -144,7 +162,7 @@ public:
   }
 };
 
-TEST_F(UUIDConsumerTest, consumer_uuid) { EXPECT_NO_THROW(counter_test()); }
+TEST_F(UUIDConsumerTest, consumer_uuid) { counter_test(); }
 
 } // anonymous namespace
 

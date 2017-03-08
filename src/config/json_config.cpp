@@ -26,6 +26,7 @@
 
 using namespace std;
 using namespace EventsCounter::Configuration;
+using namespace EventsCounter::UUIDCountersDB;
 using namespace rapidjson;
 using namespace RdKafka;
 
@@ -49,31 +50,50 @@ JsonConfig::JsonConfig(const std::string &text_config) {
     this->m_counters_uuid = get_string_vector("uuids", json_uuids);
   }
 
-  // Parse UUID Counter config
-  const Value::ConstObject counters_config =
-      get_object_object(d.GetObject(), "counters_config");
-  parse_uuid_counter_timer(counters_config);
-  this->uuid_counter_config.uuid_key = parse_uuid_key(counters_config);
-  this->uuid_counter_config.read_topics =
-      parse_read_topics(counters_config, "counters_config");
-  this->uuid_counter_config.write_topic =
-      parse_write_topic(counters_config, "counters_config");
-  parse_rdkafka_configuration(counters_config,
-                              this->uuid_counter_config.kafka_config);
+  {
+    ///////////////////////////////
+    // Parse UUID Counter config //
+    ///////////////////////////////
 
-  // // Parse Monitor config
-  // const Value::ConstObject monitor_config =
-  //     get_object_object(d.GetObject(), "monitor_config");
-  // parse_rdkafka_configuration(monitor_config, this->monitor_kafka_config);
-  // parse_uuid_consumer_configuration(counters_config, this->m_counters);
+    const Value::ConstObject counters_config =
+        get_object_object(d.GetObject(), "counters_config");
+    parse_rdkafka_configuration(
+        counters_config, this->uuid_counter_config.kafka_config, "rdkafka");
+    this->uuid_counter_config.update_period = chrono::seconds(
+        parse_update_interval(counters_config, "counters_config"));
+    this->uuid_counter_config.uuid_key = parse_uuid_key(counters_config);
+    this->uuid_counter_config.read_topics =
+        parse_read_topics(counters_config, "counters_config");
+    this->uuid_counter_config.write_topic =
+        parse_write_topic(counters_config, "counters_config");
+  }
+
+  {
+    //////////////////////////
+    // Parse Monitor config //
+    //////////////////////////
+
+    const Value::ConstObject monitor_config =
+        get_object_object(d.GetObject(), "monitor_config");
+    parse_rdkafka_configuration(
+        monitor_config, this->counters_monitor_config.kafka_config, "rdkafka");
+    pair<chrono::seconds, chrono::seconds> monitor_timer =
+        parse_timer(monitor_config, "monitor_config");
+    this->counters_monitor_config.period = monitor_timer.first;
+    this->counters_monitor_config.offset = monitor_timer.second;
+    this->counters_monitor_config.read_topic = parse_read_topic(monitor_config);
+    this->counters_monitor_config.write_topic =
+        parse_write_topic(monitor_config, "monitor_config");
+    this->counters_monitor_config.limits = parse_limits(monitor_config);
+  }
 }
 
 void JsonConfig::parse_rdkafka_configuration(
-    const Value::ConstObject &json_config,
-    struct kafka_config_s &kafka_config) {
+    const Value::ConstObject &json_config, struct kafka_config_s &kafka_config,
+    const string &object_name) const {
 
   const Value::ConstObject &consumer_rdkafka_config =
-      get_object_object(json_config, "rdkafka");
+      get_object_object(json_config, object_name);
 
   parse_kafka_properties(
       consumer_rdkafka_config, kafka_config.consumer_rk_conf_v,
@@ -81,9 +101,23 @@ void JsonConfig::parse_rdkafka_configuration(
       kafka_config.producer_rkt_conf_v);
 }
 
+UUIDCountersDB::counters_t
+JsonConfig::parse_limits(const Value::ConstObject &json_config) const {
+  UUIDCountersDB::UUIDCountersDB::counters_t limits;
+  const Value::ConstArray limits_array =
+      get_object_array(json_config, "limits", "monitor_config");
+
+  for (auto &v : limits_array) {
+    limits.insert(pair<string, uint64_t>(get_object_string(v, "uuid", "limits"),
+                                         get_object_int(v, "limit", "limits")));
+  }
+
+  return limits;
+}
+
 vector<string>
 JsonConfig::parse_read_topics(const Value::ConstObject &json_config,
-                              const string &object_name) {
+                              const string &object_name) const {
 
   const Value::ConstArray json_read_topics =
       get_object_array(json_config, "read_topics", object_name.c_str());
@@ -91,23 +125,34 @@ JsonConfig::parse_read_topics(const Value::ConstObject &json_config,
   return get_string_vector("read_topics", json_read_topics);
 }
 
+string
+JsonConfig::parse_read_topic(const Value::ConstObject &json_config) const {
+  return get_object_string(json_config, "read_topic");
+}
+
 string JsonConfig::parse_write_topic(const Value::ConstObject &json_config,
-                                     const string &object_name) {
+                                     const string &object_name) const {
   return get_object_string(json_config, "write_topic", object_name.c_str());
 }
 
-string JsonConfig::parse_uuid_key(const Value::ConstObject &json_config) {
+string JsonConfig::parse_uuid_key(const Value::ConstObject &json_config) const {
   return get_object_string(json_config, "json_read_uuid_key");
 }
 
-void JsonConfig::parse_uuid_counter_timer(
-    const Value::ConstObject &json_config) {
+pair<chrono::seconds, chrono::seconds>
+JsonConfig::parse_timer(const Value::ConstObject &json_config,
+                        const string &object_name) const {
   const Value::ConstObject timer =
-      get_object_object(json_config, "timer_seconds", "counters_config");
-  this->uuid_counter_config.period =
-      chrono::seconds(get_object_int(timer, "period", "timer_seconds"));
-  this->uuid_counter_config.offset =
-      chrono::seconds(get_object_int(timer, "offset", "timer_seconds"));
+      get_object_object(json_config, "timer_seconds", object_name.c_str());
+  return pair<chrono::seconds, chrono::seconds>(
+      chrono::seconds(get_object_int(timer, "period", "timer_seconds")),
+      chrono::seconds(get_object_int(timer, "offset", "timer_seconds")));
+}
+
+uint64_t
+JsonConfig::parse_update_interval(const Value::ConstObject &json_config,
+                                  const string &object_name) const {
+  return get_object_int(json_config, "update_interval", object_name.c_str());
 }
 
 ///////////////////////////
@@ -222,7 +267,7 @@ void JsonConfig::parse_kafka_properties(const Value::ConstObject &kafka_config,
     kafka_conf_list &rkt_conf;
   };
 
-  static const std::vector<struct to_parse> to_parse{
+  const std::vector<struct to_parse> to_parse{
       {"read", consumer_conf, consumer_tconf},
       {"write", producer_conf, producer_tconf},
   };

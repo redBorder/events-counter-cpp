@@ -72,10 +72,6 @@ TEST_F(KafkaJSONWrittersTest, produce_monitor_message) {
       EXPECT_TRUE(uuid.IsString());
       EXPECT_STREQ("00000000-0000-0000-C000-000000000000", uuid.GetString());
 
-      rapidjson::Value &value = json["value"];
-      EXPECT_TRUE(value.IsUint64());
-      EXPECT_EQ(42, value.GetUint64());
-
       break;
     }
   }

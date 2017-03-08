@@ -19,7 +19,9 @@
 
 #pragma once
 
+#include "../config/config.hpp"
 #include "../utils/uuid_bytes.hpp"
+#include "events_consumer.hpp"
 
 #include <librdkafka/rdkafkacpp.h>
 
@@ -28,22 +30,35 @@
 namespace EventsCounter {
 namespace Consumers {
 
-class KafkaJSONCounterConsumer {
+typedef std::vector<std::pair<std::string, std::string>> kafka_conf_list_t;
+
+class KafkaJSONCounterConsumer : public EventsConsumer {
 private:
   std::unique_ptr<RdKafka::KafkaConsumer> kafka_consumer;
+  uint64_t period;
+  uint64_t offset;
 
   Utils::UUIDBytes
   get_message_uuid_bytes(std::unique_ptr<RdKafka::Message> &message) const;
 
 public:
-  KafkaJSONCounterConsumer(const std::string &topic, RdKafka::Conf *conf);
-  ~KafkaJSONCounterConsumer();
+  KafkaJSONCounterConsumer(uint64_t t_period, uint64_t t_offset,
+                           const std::string &read_topic,
+                           kafka_conf_list_t t_rk_conf_v,
+                           kafka_conf_list_t t_rkt_conf_v);
+  ~KafkaJSONCounterConsumer() {}
   KafkaJSONCounterConsumer(KafkaJSONCounterConsumer &&) = delete;
   KafkaJSONCounterConsumer &
   operator=(const KafkaJSONCounterConsumer &) = delete;
   KafkaJSONCounterConsumer &
   operator=(const KafkaJSONCounterConsumer &&) = delete;
 
+  /**
+   * Check if a timestamp belongs to the current interval. Used to discard old
+   * counters.
+   */
+  static bool check_timestamp(Utils::UUIDBytes &uuid_bytes, uint64_t period,
+                              uint64_t offset);
   /**
    * Consume a JSON message from Kafka and returns the "uuid" and "value"
    * fields.

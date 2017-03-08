@@ -19,32 +19,17 @@
 
 #pragma once
 
-#include "../utils/uuid_bytes.hpp"
+#include <librdkafka/rdkafkacpp.h>
 
-#include <chrono>
 #include <memory>
-#include <thread>
-
-typedef enum {
-  NO_ERROR,
-  ERR_QUEUE_FULL,
-  ERR_MSG_TOO_LARGE,
-} ErrorCode;
+#include <string>
+#include <vector>
 
 namespace EventsCounter {
-namespace Producers {
-
-class MonitorProducer {
-public:
-  virtual ~MonitorProducer() = default;
-
-  /**
-   * [produce description]
-   * @param  counter   [description]
-   * @param  timestamp [description]
-   * @return           [description]
-   */
-  virtual ErrorCode produce(const Utils::UUIDBytes &counter) = 0;
-};
+namespace Utils {
+void rdkafka_set_conf_vector(
+    const std::vector<std::pair<std::string, std::string>> &conf_parameters,
+    const std::unique_ptr<RdKafka::Conf> &conf,
+    const std::string &err_conf_type);
 };
 };

@@ -47,13 +47,16 @@ struct uuid_counter_config_s {
   std::vector<std::string> read_topics;
   std::string write_topic;
   std::string uuid_key;
-  std::chrono::seconds period;
-  std::chrono::seconds offset;
+  std::chrono::seconds update_period;
 };
 
 struct counters_monitor_config_s {
   kafka_config_s kafka_config;
-  std::vector<std::string> read_topics;
+  std::string read_topic;
+  std::string write_topic;
+  std::chrono::seconds period;
+  std::chrono::seconds offset;
+  UUIDCountersDB::UUIDCountersDB::counters_t limits;
 };
 
 class Config {
@@ -61,9 +64,7 @@ public:
   virtual ~Config() = default;
 
   virtual const std::vector<std::string> &counters_uuids() = 0;
-
   virtual struct uuid_counter_config_s get_uuid_counter_config() = 0;
-
   virtual struct counters_monitor_config_s get_monitor_config() = 0;
 };
 };

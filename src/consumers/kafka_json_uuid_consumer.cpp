@@ -75,12 +75,12 @@ KafkaJSONUUIDConsumer::KafkaJSONUUIDConsumer(const vector<string> &topics,
   this->kafka_consumer =
       unique_ptr<KafkaConsumer>(KafkaConsumer::create(conf, errstr));
   if (!this->kafka_consumer) {
-    throw CreateConsumerException(errstr);
+    throw CreateConsumerException(errstr.c_str());
   }
 
   ErrorCode err = this->kafka_consumer->subscribe(topics);
   if (err) {
-    throw SubscribeException(errstr);
+    throw SubscribeException(errstr.c_str());
   }
 }
 

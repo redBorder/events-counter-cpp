@@ -67,19 +67,19 @@ private:
   bool add_value(const uint64_t val) { return Base::Uint64(val); }
 
 public:
-  explicit JSONMonitorWritter(Utils::UUIDBytes &uuid_bytes, OutputStream &os,
+  explicit JSONMonitorWritter(const Utils::UUIDBytes &uuid_bytes,
+                              OutputStream &os,
                               StackAllocator *allocator = nullptr,
                               size_t levelDepth = Base::kDefaultLevelDepth)
       : Base(os, allocator, levelDepth) {
     Base::StartObject();
 
     const std::vector<struct json_child<std::string>> strings {
-      {"type", "data"}, {"unit", "bytes"}, {"monitor", "uuid_received"},
+      {"type", "data"}, {"monitor", "uuid_limit_reached"},
           {"uuid", uuid_bytes.get_uuid()},
     };
     const std::vector<struct json_child<uint64_t>> numbers {
-      {"timestamp", current_unix_timestamp()},
-          {"value", uuid_bytes.get_bytes()},
+      { "timestamp", current_unix_timestamp() }
     };
 
     dump_vars(strings);

@@ -19,29 +19,31 @@
 
 #pragma once
 
+#include <exception>
+
 namespace EventsCounter {
 namespace Consumers {
 
 class KafkaJSONConsumerException : public std::exception {
 private:
-  const std::string errstr;
+  const char *errstr;
 
 protected:
-  KafkaJSONConsumerException(std::string t_errstr) : errstr(t_errstr) {}
+  KafkaJSONConsumerException(const char *t_errstr) : errstr(t_errstr) {}
 
 public:
-  virtual const char *what() const throw() { return errstr.c_str(); }
+  virtual const char *what() const throw() { return errstr; }
 };
 
 class CreateConsumerException : public KafkaJSONConsumerException {
 public:
-  CreateConsumerException(std::string t_errstr)
+  CreateConsumerException(const char *t_errstr)
       : KafkaJSONConsumerException(t_errstr) {}
 };
 
 class SubscribeException : public KafkaJSONConsumerException {
 public:
-  SubscribeException(std::string t_errstr)
+  SubscribeException(const char *t_errstr)
       : KafkaJSONConsumerException(t_errstr) {}
 };
 };
