@@ -11,11 +11,11 @@ Messages are expected to be on JSON format when counting messages.
 ## Usage
 
 ```bash
-./events-counter <config.yml>
+./events-counter -c <config.json>
 ```
 
-In the config file you can specify some filters. For example, you can ignore
-messages with a specific field/value on the JSON.
+In the config file you can specify some filters. For example, you can count
+messages with a specific uuid.
 
 ### License files
 
@@ -39,6 +39,6 @@ This will generate a ready to use binary.
 | Version                                                        |       Feature         | Status             |
 |:--------------------------------------------------------------:|:---------------------:|:------------------:|
 | [0.2](https://github.com/redBorder/events-counter/milestone/1) | Counter module        | :white_check_mark: |
-| [0.3](https://github.com/redBorder/events-counter/milestone/2) | Config/License module | :construction:     |
-| [0.5](https://github.com/redBorder/events-counter/milestone/4) | Monitor module        | :construction:     |
-| [0.6](https://github.com/redBorder/events-counter/milestone/5) | Alerts module         | :construction:     |
+| [0.3](https://github.com/redBorder/events-counter/milestone/2) | Config module         | :white_check_mark: |
+| [0.4](https://github.com/redBorder/events-counter/milestone/3) | Monitor module        | :white_check_mark: |
+| [0.5](https://github.com/redBorder/events-counter/milestone/4) | License module        | :construction:     |
