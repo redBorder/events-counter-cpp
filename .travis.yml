@@ -28,8 +28,10 @@ install:
     wurstmeister/zookeeper
   - >
     docker run -d --net test --ip 172.26.0.3 --name kafka
-    -e KAFKA_ADVERTISED_HOST_NAME="172.26.0.3" -e KAFKA_ADVERTISED_PORT="9092"
-    -e KAFKA_ZOOKEEPER_CONNECT="172.26.0.2:2181" wurstmeister/kafka
+    -e KAFKA_ADVERTISED_HOST_NAME="172.26.0.3"
+    -e KAFKA_ADVERTISED_PORT="9092"
+    -e KAFKA_ZOOKEEPER_CONNECT="172.26.0.2:2181"
+    wurstmeister/kafka
 
 script:
   - >
@@ -38,7 +40,7 @@ script:
   - docker run -v $(pwd):/app redborder/dev-containers:events-counter make
   - >
     docker run -v $(pwd):/app --net test -e CFLAGS=-w
-    --link kafka redborder/dev-containers:events-counter make checks -j4
+    --link kafka redborder/dev-containers:events-counter make checks
 
 after_success:
   - docker run -v $(pwd):/app redborder/dev-containers:events-counter make clean
